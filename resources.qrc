@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/logo.svg</file>
+        <file>sponsor.png</file>
+        <file>images/author.jpg</file>
+        <file>images/close.png</file>
+    </qresource>
+</RCC>
