@@ -3,6 +3,7 @@
 
 #include "class/appmanager.h"
 #include "class/settingmanager.h"
+#include "plugin/pluginsystem.h"
 #include "utilities.h"
 #include <DCheckBox>
 #include <DDialog>
@@ -63,6 +64,7 @@ private:
 private:
   AppManager *manager;
   SettingManager *sm;
+  PluginSystem *plgsys;
 
   DTabWidget *tabs;
 
@@ -79,7 +81,8 @@ private:
   DIconButton *lbls[9] = {nullptr};
 
 private:
-  QList<ShortCutEditRes> scinfos;
+  QMap<QHotkey *, ShortCutEditRes> scinfos;
+  QList<QHotkey *> hotkeys;
 };
 
 #endif // CENTERWINDOW_H

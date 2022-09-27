@@ -15,16 +15,17 @@
 #define LoadingPluginMsg QVariant::fromValue('l')
 #define LoadedPluginMsg QVariant::fromValue('L')
 #define HostService -1
+#define RemoteCallRes -2
 
 struct WingPluginInfo {
   QString pluginName;
   QString pluginAuthor;
   uint pluginVersion;
-  QString puid;
+  QByteArray provider;
   QString pluginComment;
 };
 
-enum class MouseButton {
+enum class MouseButtonEvent {
   NoneButton,
   LeftButton,
   RightButton,
@@ -32,19 +33,35 @@ enum class MouseButton {
   XButton_1,
   XButton_2
 };
-Q_DECLARE_METATYPE(MouseButton)
+Q_DECLARE_METATYPE(MouseButtonEvent)
 
-enum class MouseWheel { None, Up, Down, Left, Right };
-Q_DECLARE_METATYPE(MouseWheel)
+enum class MouseWheelEvent { None, Up, Down, Left, Right };
+Q_DECLARE_METATYPE(MouseWheelEvent)
 
 #undef Success
 
 enum class RemoteCallError {
-  Success,        // 回调成功
-  Unkown,         // 回调未知错误，通常由于未处理异常导致
-  PluginNotFound, // 找不到的插件
-  ArgsCount,      // 调用远程函数的参数不足
+  Success,         // 回调成功
+  Unkown,          // 回调未知错误，通常由于未处理异常导致
+  PluginNotFound,  // 找不到的插件
+  ServiceNotFound, // 找到插件，但没有找到对应的服务
+  ArgsCount,       // 调用远程函数的参数不足
 };
+Q_DECLARE_METATYPE(RemoteCallError)
+
+#undef ButtonPress
+#undef ButtonRelease
+enum HookIndex {
+  None = 0,
+  ButtonPress = 1,
+  ButtonRelease = 2,
+  Clicked = 4,
+  DoubleClicked = 8,
+  MouseWheel = 16,
+  MouseMove = 32,
+  MouseDrag = 64
+};
+Q_DECLARE_METATYPE(HookIndex)
 
 class IWingToolPlg : public QObject {
   Q_OBJECT
@@ -75,6 +92,7 @@ public:
   virtual QString pluginComment() = 0;
   virtual QIcon pluginIcon() = 0;
   virtual QStringList pluginServices() = 0;
+  virtual HookIndex getHookSubscribe() { return HookIndex::None; }
 
   // 指示是否作为工具，如果 false，则不在工具选择中显示
   virtual bool isTool() { return true; }
@@ -85,10 +103,13 @@ signals:
   QUuid registerHotkey(QKeySequence &keyseq);
 
   // 修改热键状态，其中 id 为注册热键句柄，enable 为热键的新状态
-  bool enableHotKey(QUuid id, bool enabled = true);
+  bool enableHotKey(const QUuid id, bool enabled = true);
+
+  // 修改热键
+  bool editHotkey(const QUuid id, QKeySequence &seq);
 
   // 注销热键，其中 id 为注册热键句柄
-  bool unregisterHotkey(QUuid id);
+  bool unregisterHotkey(const QUuid id);
 
   // 跨插件函数远程调用，其中 puid 为插件的唯一标识，
   // callback 为回调句柄（通常字符串）， params 为远程调用的参数
@@ -97,17 +118,17 @@ signals:
 
 public slots:
   // 宿主开始回调函数时候使用，第一个参数是函数服务索引，第二个是参数集合
-  virtual void plugin2MessagePipe(int serviceID, QList<QVariant> params) = 0;
+  virtual QVariant pluginServicePipe(int serviceID, QList<QVariant> params) = 0;
 
   // 当鼠标任何一个键被按下就会触发该函数，如果想处理重载
-  virtual void buttonPress(MouseButton btn, int x, int y) {
+  virtual void buttonPress(MouseButtonEvent btn, int x, int y) {
     Q_UNUSED(btn);
     Q_UNUSED(x);
     Q_UNUSED(y);
   }
 
   // 当鼠标任何一个键从被按下的状态释放就会触发该函数，如果想处理重载
-  virtual void buttonRelease(MouseButton btn, int x, int y) {
+  virtual void buttonRelease(MouseButtonEvent btn, int x, int y) {
     Q_UNUSED(btn);
     Q_UNUSED(x);
     Q_UNUSED(y);
@@ -129,10 +150,16 @@ public slots:
   }
 
   // 当鼠标滚轮滚动时会触发该函数，如果想处理重载
-  virtual void mouseWheel(MouseWheel direction) { Q_UNUSED(direction); }
+  virtual void mouseWheel(MouseWheelEvent direction) { Q_UNUSED(direction); }
 
   // 当鼠标移动时会触发该函数，如果想处理重载
   virtual void mouseMove(int x, int y) {
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+  }
+
+  // 当鼠标进行拖拽操作时触发该函数，如果想处理重载
+  virtual void mouseDrag(int x, int y) {
     Q_UNUSED(x);
     Q_UNUSED(y);
   }

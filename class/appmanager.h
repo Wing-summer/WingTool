@@ -21,9 +21,11 @@ public:
 public:
   QHotkey *registerHotkey(QKeySequence &keyseq);
   bool enableHotKey(int index, bool enabled = true);
+  bool enableHotKey(QHotkey *hotkey, bool enabled = true);
   bool unregisterHotkey(QHotkey *hotkey);
   bool unregisterHotkey(int index);
   bool editHotkey(int index, QKeySequence &keyseq);
+  bool editHotkey(QHotkey *hotkey, QKeySequence &keyseq);
   QHotkey *hotkey(int index);
   void clearHotkey();
 
@@ -36,9 +38,9 @@ signals:
   void mouseMove(int x, int y);
   void mouseDrag(int x, int y);
 
-  void hotkeyTirggered(const QHotkey *hotkey, int index);
-  void hotkeyReleased(const QHotkey *hotkey, int index);
-  void hotkeyEnableChanged(bool value, const QHotkey *hotkey, int index);
+  void hotkeyTirggered(const QHotkey *hotkey);
+  void hotkeyReleased(const QHotkey *hotkey);
+  void hotkeyEnableChanged(bool value, const QHotkey *hotkey);
 
   void selectionTextChanged(const QString &selectedText);
 

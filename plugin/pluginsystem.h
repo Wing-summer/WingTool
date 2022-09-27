@@ -19,7 +19,8 @@ public:
     signature,
     sdkVersion,
     pluginName,
-    puid,
+    provider,
+    service,
     plugin2MessagePipe,
     init,
   };
@@ -45,12 +46,14 @@ private:
   static PluginSystem *m_instance;
   AppManager *manager;
 
-  QStringList loadedpuid;                     // 已加载的插件 PUID
+  QStringList loadedProvider;                 // 已加载的插件 PUID
   QList<IWingToolPlg *> m_plgs;               // 已加载的插件集合
   QMap<IWingToolPlg *, QList<QUuid>> m_plghk; // 注册的热键句柄集合
   QMap<QUuid, QHotkey *> uhmap;               // UUID 和 QHotkey 的对应图
   QMap<IWingToolPlg::Catagorys, QList<IWingToolPlg *>>
       m_catplgs; // 对应类别的插件集合
+
+  QMap<HookIndex, QList<IWingToolPlg *>> dispatcher;
 };
 
 #endif // PLUGINSYSTEM_H

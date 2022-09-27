@@ -18,7 +18,7 @@
 
 CenterWindow::CenterWindow(DMainWindow *parent)
     : DMainWindow(parent), manager(AppManager::instance()),
-      sm(SettingManager::instance()) {
+      sm(SettingManager::instance()), plgsys(PluginSystem::instance()) {
   QIcon picon = ProgramIcon;
   setWindowTitle(tr("CenterWindow"));
   setMinimumSize(700, 500);
@@ -104,7 +104,7 @@ CenterWindow::CenterWindow(DMainWindow *parent)
     if (row < 0 || row >= scinfos.count())
       return;
     auto b = tbhotkeys->item(row, 0)->checkState() == Qt::Checked;
-    scinfos[row].enabled = b;
+    scinfos[hotkeys[row]].enabled = b;
     manager->enableHotKey(row, b);
   });
   connect(tbhotkeys, &DTableWidget::cellDoubleClicked, this,
@@ -195,7 +195,41 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   auto playout = new QHBoxLayout(w);
   lwplgs = new DListWidget(w);
   playout->addWidget(lwplgs);
+  for (auto item : PluginSystem::instance()->plugins()) {
+    lwplgs->addItem(new QListWidgetItem(Utilities::processPluginIcon(item),
+                                        item->pluginName()));
+  }
+
   tbplginfo = new DTextBrowser(w);
+  tbplginfo->setUndoRedoEnabled(false);
+  tbplginfo->setText(tr("No selected plugin."));
+
+  connect(lwplgs, &DListWidget::itemSelectionChanged, this, [=] {
+    tbplginfo->clear();
+    auto plg = plgsys->plugin(lwplgs->currentRow());
+    tbplginfo->append(tr("Name:") + plg->pluginName());
+
+    auto e = QMetaEnum::fromType<IWingToolPlg::Catagorys>();
+
+    tbplginfo->append(QObject::tr("Catagory:") +
+                      QObject::tr(e.valueToKey(int(plg->pluginCatagory()))));
+    tbplginfo->append(QObject::tr("Version") +
+                      QString::number(plg->pluginVersion()));
+    tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
+    tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
+    tbplginfo->append(QObject::tr("Provider:") + plg->provider());
+
+    tbplginfo->append(QObject::tr("Services:"));
+    int i = 0;
+    for (auto &item : plg->pluginServices()) {
+      tbplginfo->append(QString("\t%1 : %2").arg(i++).arg(item));
+    }
+
+    tbplginfo->append(tr("RegisteredHotkey:"));
+    for (auto &item : plgsys->pluginRegisteredHotkey(plg)) {
+      tbplginfo->append(QString("\t%1").arg(item.toString()));
+    }
+  });
   playout->addWidget(tbplginfo);
   tabs->addTab(w, tr("Plugins"));
 
@@ -233,19 +267,20 @@ CenterWindow::CenterWindow(DMainWindow *parent)
 
   //初始化热键事件处理函数
   QObject::connect(manager, &AppManager::hotkeyTirggered, this,
-                   [=](const QHotkey *, int index) {
-                     auto &task = scinfos[index];
+                   [=](const QHotkey *hotkey) {
+                     auto &task = scinfos[const_cast<QHotkey *>(hotkey)];
                      this->runTask(task.process, task.params);
                    });
   QObject::connect(manager, &AppManager::hotkeyReleased, this,
-                   [=](const QHotkey *, int) {
+                   [=](const QHotkey *) {
 
                    });
-  QObject::connect(manager, &AppManager::hotkeyEnableChanged, this,
-                   [=](bool value, const QHotkey *, int index) {
-                     tbhotkeys->item(index, 0)->setCheckState(
-                         value ? Qt::Checked : Qt::Unchecked);
-                   });
+  QObject::connect(
+      manager, &AppManager::hotkeyEnableChanged, this,
+      [=](bool value, const QHotkey *hotkey) {
+        tbhotkeys->item(hotkeys.indexOf(const_cast<QHotkey *>(hotkey)), 0)
+            ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
+      });
 }
 
 void CenterWindow::show(CenterWindow::TabPage index) {
@@ -298,7 +333,7 @@ bool CenterWindow::runTask(QString program, QString param) {
 void CenterWindow::editTask(int index) {
   if (index < 0 || index >= scinfos.count())
     return;
-  auto &task = scinfos[index];
+  auto &task = scinfos[hotkeys[index]];
   ShortCutEditDialog d(task.enabled, task.seq, task.process, task.params);
   if (d.exec()) {
     auto res = d.getResult();
@@ -330,13 +365,15 @@ void CenterWindow::on_removeHotkey() {
       nums.append(item.row());
     std::sort(nums.begin(), nums.end(), std::greater<int>());
     for (auto item : nums) {
-      scinfos.removeAt(item);
+      auto hk = hotkeys.takeAt(item);
+      scinfos.remove(hk);
       manager->unregisterHotkey(item);
       tbhotkeys->removeRow(item);
     }
   } else {
     auto row = tbhotkeys->currentRow();
-    scinfos.removeAt(row);
+    auto hk = hotkeys.takeAt(row);
+    scinfos.remove(hk);
     manager->unregisterHotkey(row);
     tbhotkeys->removeRow(row);
   }
@@ -344,6 +381,7 @@ void CenterWindow::on_removeHotkey() {
 
 void CenterWindow::on_clearHotkey() {
   scinfos.clear();
+  hotkeys.clear();
   manager->clearHotkey();
   tbhotkeys->setRowCount(0);
   DMessageManager::instance()->sendMessage(this, ProgramIcon,
@@ -354,6 +392,15 @@ void CenterWindow::on_addHotkey() {
   ShortCutEditDialog d;
   if (d.exec()) {
     auto res = d.getResult();
+    auto hk = manager->registerHotkey(res.seq);
+    if (hk == nullptr) {
+      DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                               tr("HotkeyRegisterFail"));
+      return;
+    }
+    scinfos.insert(hk, res);
+    hotkeys.append(hk);
+
     auto index = tbhotkeys->rowCount();
     tbhotkeys->setRowCount(index + 1);
     auto wt = new QTableWidgetItem;
@@ -366,9 +413,6 @@ void CenterWindow::on_addHotkey() {
     wt = new QTableWidgetItem(res.params);
     wt->setToolTip(res.params);
     tbhotkeys->setItem(index, 3, wt);
-
-    scinfos.append(res);
-    manager->registerHotkey(res.seq);
   }
 }
 
