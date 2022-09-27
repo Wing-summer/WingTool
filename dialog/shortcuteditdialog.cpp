@@ -29,15 +29,35 @@ ShortCutEditDialog::ShortCutEditDialog(bool enabled, QKeySequence seq,
   addContent(new DLabel(tr("Plugin"), this));
   addSpacing(5);
   ps = new PluginSelector(this);
+  connect(ps, &PluginSelector::finished, this, [=] {
+    auto plg = ps->getSelectedPlg();
+    if (plg) {
+      lblp->setText(tr("Service"));
+      fcedit->setVisible(false);
+      cbService->clear();
+      cbService->addItems(plg->pluginServices());
+      cbService->setVisible(true);
+    } else {
+      lblp->setText(tr("FilePath"));
+      fcedit->setVisible(true);
+      cbService->setVisible(false);
+    }
+  });
   addContent(ps);
   addSpacing(10);
 
-  addContent(new DLabel(tr("FilePath"), this));
+  lblp = new DLabel(tr("FilePath"), this);
+  addContent(lblp);
   addSpacing(5);
   fcedit = new DFileChooserEdit(this);
   fcedit->initDialog();
   fcedit->setText(process);
   addContent(fcedit);
+
+  cbService = new DComboBox(this);
+  cbService->setVisible(false);
+  addContent(cbService);
+
   addSpacing(10);
 
   addContent(new DLabel(tr("Param"), this));

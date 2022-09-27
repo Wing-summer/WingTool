@@ -70,7 +70,33 @@ PluginSystem::PluginSystem(QObject *parent)
   });
   connect(manager, &AppManager::hotkeyTirggered, this,
           [=](const QHotkey *hotkey) {
-
+            auto uuid = uhmap.key(const_cast<QHotkey *>(hotkey), QUuid());
+            if (uuid.isNull())
+              return;
+            int id;
+            auto plg = this->loopUpHotkey(uuid, id);
+            if (plg)
+              plg->pluginServicePipe(HotKeyTriggered, {uuid});
+          });
+  connect(manager, &AppManager::hotkeyReleased, this,
+          [=](const QHotkey *hotkey) {
+            auto uuid = uhmap.key(const_cast<QHotkey *>(hotkey), QUuid());
+            if (uuid.isNull())
+              return;
+            int id;
+            auto plg = this->loopUpHotkey(uuid, id);
+            if (plg)
+              plg->pluginServicePipe(HotKeyReleased, {uuid});
+          });
+  connect(manager, &AppManager::hotkeyEnableChanged, this,
+          [=](bool value, const QHotkey *hotkey) {
+            auto uuid = uhmap.key(const_cast<QHotkey *>(hotkey), QUuid());
+            if (uuid.isNull())
+              return;
+            int id;
+            auto plg = this->loopUpHotkey(uuid, id);
+            if (plg)
+              plg->pluginServicePipe(HotkeyEnableChanged, {value, uuid});
           });
 
   LoadPlugin();
@@ -85,8 +111,12 @@ PluginSystem::~PluginSystem() {
 
 bool PluginSystem::LoadPlugin() {
   QDir plugindir(QCoreApplication::applicationDirPath() + "/plugin");
+#ifdef QT_DEBUG
+  plugindir.setNameFilters(QStringList("*.so"));
+#else
   plugindir.setNameFilters(QStringList("*.wingplg"));
-  auto plgs = plugindir.entryInfoList();
+#endif
+  auto plgs = plugindir.entryInfoList(QDir::Files);
   for (auto item : plgs) {
     loadPlugin(item);
   }
@@ -194,7 +224,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
 
         // 连接信号
         connect(p, &IWingToolPlg::registerHotkey, this,
-                [=](QKeySequence &keyseq) {
+                [=](QKeySequence keyseq) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
                     return QUuid();
@@ -234,7 +264,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   return false;
                 });
         connect(p, &IWingToolPlg::editHotkey, this,
-                [=](const QUuid id, QKeySequence &seq) {
+                [=](const QUuid id, QKeySequence seq) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
                     return false;
@@ -304,4 +334,15 @@ QList<QKeySequence> PluginSystem::pluginRegisteredHotkey(IWingToolPlg *plg) {
     keys.append(hk->shortcut());
   }
   return keys;
+}
+
+IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid, int &index) {
+  for (auto plg : m_plgs) {
+    auto res = m_plghk[plg].indexOf(uuid);
+    if (res >= 0) {
+      index = res;
+      return plg;
+    }
+  }
+  return nullptr;
 }

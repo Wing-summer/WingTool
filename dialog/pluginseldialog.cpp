@@ -2,6 +2,7 @@
 #include "plugin/pluginsystem.h"
 #include "utilities.h"
 #include <DButtonBox>
+#include <DMessageManager>
 #include <QHBoxLayout>
 #include <QMetaEnum>
 
@@ -52,8 +53,15 @@ PluginSelDialog::PluginSelDialog(DDialog *parent) : DDialog(parent) {
   auto group = new DButtonBox(this);
   QList<DButtonBoxButton *> blist;
   auto b = new DButtonBoxButton(tr("Select"), this);
-  connect(b, &DButtonBoxButton::clicked, this,
-          [=] { this->done(lsplgs->currentRow()); });
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+    auto sel = lsplgs->currentRow();
+    if (sel < 0) {
+      DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                               tr("NoSelection"));
+      return;
+    }
+    this->done(sel);
+  });
   blist.append(b);
   b = new DButtonBoxButton(tr("NoPlugin"), this);
   connect(b, &DButtonBoxButton::clicked, this, [=] { this->done(-1); });

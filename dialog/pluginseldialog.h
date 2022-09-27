@@ -9,6 +9,7 @@
 DWIDGET_USE_NAMESPACE
 
 class PluginSelDialog : public DDialog {
+  Q_OBJECT
 public:
   PluginSelDialog(DDialog *parent = nullptr);
 

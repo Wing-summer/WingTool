@@ -6,15 +6,18 @@
 #include "class/appmanager.h"
 #include "control/pluginselector.h"
 #include <DCheckBox>
+#include <DComboBox>
 #include <DDialog>
 #include <DFileChooserEdit>
 #include <DKeySequenceEdit>
+#include <DLabel>
 #include <DLineEdit>
 #include <DMainWindow>
 
 DWIDGET_USE_NAMESPACE
 
 class ShortCutEditDialog : public DDialog {
+  Q_OBJECT
 public:
   ShortCutEditDialog(bool enabled = true, QKeySequence seq = QKeySequence(),
                      QString process = QString(), QString params = QString(),
@@ -37,6 +40,9 @@ private:
   DFileChooserEdit *fcedit;
   DLineEdit *dledit;
   DKeySequenceEdit *ksedit;
+
+  DLabel *lblp;
+  DComboBox *cbService;
 };
 
 #endif // SHORTCUTEDITDIALOG_H

@@ -8,6 +8,7 @@
 DWIDGET_USE_NAMESPACE
 
 class PluginSelector : public DPushButton {
+  Q_OBJECT
 public:
   explicit PluginSelector(QWidget *parent = nullptr);
 
@@ -17,6 +18,9 @@ public slots:
 public:
   int getSelectedIndex();
   IWingToolPlg *getSelectedPlg();
+
+signals:
+  void finished();
 
 private:
   PluginSystem *plgsys;

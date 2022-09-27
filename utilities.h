@@ -19,10 +19,10 @@ struct ShortCutEditRes {
 class Utilities {
 public:
   static QIcon processPluginIcon(IWingToolPlg *plg) {
-    if (plg->pluginIcon().availableSizes().count()) {
-      return plg->pluginIcon();
+    if (plg->pluginIcon().isNull()) {
+      return ICONRES("plugin");
     }
-    return ICONRES("plugin");
+    return plg->pluginIcon();
   }
 };
 

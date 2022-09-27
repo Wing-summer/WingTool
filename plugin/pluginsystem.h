@@ -43,6 +43,9 @@ public:
   QList<QKeySequence> pluginRegisteredHotkey(IWingToolPlg *plg);
 
 private:
+  IWingToolPlg *loopUpHotkey(QUuid uuid, int &index);
+
+private:
   static PluginSystem *m_instance;
   AppManager *manager;
 

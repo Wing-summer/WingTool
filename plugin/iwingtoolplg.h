@@ -1,6 +1,8 @@
 #ifndef IWINGTOOLPLG_H
 #define IWINGTOOLPLG_H
 
+#include <QIcon>
+#include <QKeySequence>
 #include <QObject>
 #include <QUuid>
 #include <QVariant>
@@ -14,8 +16,19 @@
 
 #define LoadingPluginMsg QVariant::fromValue('l')
 #define LoadedPluginMsg QVariant::fromValue('L')
-#define HostService -1
-#define RemoteCallRes -2
+
+/*=================================*/
+
+// 插件系统预定义服务号，全部为负数
+// 如果服务号为非负数，则表示为插件服务
+
+#define HostService -1         // 插件加载消息服务
+#define RemoteCallRes -2       // 远程调用结果服务
+#define HotKeyTriggered -3     // 热键触发服务
+#define HotKeyReleased -4      //热键释放服务
+#define HotkeyEnableChanged -5 // 热键状态更改服务
+
+/*=================================*/
 
 struct WingPluginInfo {
   QString pluginName;
@@ -100,13 +113,13 @@ public:
 signals:
   // 注册热键，如果被占用则返回 -1 表示失败（通常是重复），
   // 大于等于 0 则表示成功，返回句柄
-  QUuid registerHotkey(QKeySequence &keyseq);
+  QUuid registerHotkey(QKeySequence keyseq);
 
   // 修改热键状态，其中 id 为注册热键句柄，enable 为热键的新状态
   bool enableHotKey(const QUuid id, bool enabled = true);
 
   // 修改热键
-  bool editHotkey(const QUuid id, QKeySequence &seq);
+  bool editHotkey(const QUuid id, QKeySequence seq);
 
   // 注销热键，其中 id 为注册热键句柄
   bool unregisterHotkey(const QUuid id);

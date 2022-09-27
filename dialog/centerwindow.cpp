@@ -213,7 +213,7 @@ CenterWindow::CenterWindow(DMainWindow *parent)
 
     tbplginfo->append(QObject::tr("Catagory:") +
                       QObject::tr(e.valueToKey(int(plg->pluginCatagory()))));
-    tbplginfo->append(QObject::tr("Version") +
+    tbplginfo->append(QObject::tr("Version:") +
                       QString::number(plg->pluginVersion()));
     tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
     tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
@@ -268,8 +268,10 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   //初始化热键事件处理函数
   QObject::connect(manager, &AppManager::hotkeyTirggered, this,
                    [=](const QHotkey *hotkey) {
-                     auto &task = scinfos[const_cast<QHotkey *>(hotkey)];
-                     this->runTask(task.process, task.params);
+                     if (hotkeys.contains(const_cast<QHotkey *>(hotkey))) {
+                       auto &task = scinfos[const_cast<QHotkey *>(hotkey)];
+                       this->runTask(task.process, task.params);
+                     }
                    });
   QObject::connect(manager, &AppManager::hotkeyReleased, this,
                    [=](const QHotkey *) {
@@ -278,8 +280,10 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   QObject::connect(
       manager, &AppManager::hotkeyEnableChanged, this,
       [=](bool value, const QHotkey *hotkey) {
-        tbhotkeys->item(hotkeys.indexOf(const_cast<QHotkey *>(hotkey)), 0)
-            ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
+        if (hotkeys.contains(const_cast<QHotkey *>(hotkey))) {
+          tbhotkeys->item(hotkeys.indexOf(const_cast<QHotkey *>(hotkey)), 0)
+              ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
+        }
       });
 }
 

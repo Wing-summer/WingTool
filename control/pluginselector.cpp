@@ -19,12 +19,13 @@ void PluginSelector::selectPlugin() {
   if (index >= 0) {
     auto plg = plgsys->plugin(index);
     setIcon(Utilities::processPluginIcon(plg));
-    selplgindex = index;
     setText(plg->pluginName());
   } else {
     setText("/");
     setIcon(ICONRES("plugin"));
   }
+  selplgindex = index;
+  emit finished();
 }
 
 int PluginSelector::getSelectedIndex() { return selplgindex; }
