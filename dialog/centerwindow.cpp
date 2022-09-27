@@ -12,6 +12,7 @@
 #include <QHeaderView>
 #include <QMimeDatabase>
 #include <QProcess>
+#include <QScrollArea>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
 #include <QVector>
@@ -33,7 +34,19 @@ CenterWindow::CenterWindow(DMainWindow *parent)
 
   // General
   auto w = new QWidget(this);
+  auto scview = new QScrollArea;
+  scview->setWidget(w);
   auto vlayout = new QVBoxLayout(w);
+
+  auto l = new DLabel(tr("Common"), this);
+  auto font = this->font();
+  font.setUnderline(true);
+  font.setBold(true);
+  font.setItalic(true);
+  l->setFont(font);
+
+  vlayout->addWidget(l);
+  vlayout->addSpacing(5);
   cbauto = new DCheckBox(tr("AutoStart"), this);
   vlayout->setMargin(20);
   vlayout->addWidget(cbauto, Qt::AlignTop);
@@ -236,7 +249,7 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   // AboutAuthor
   w = new QWidget(this);
   auto alayout = new QVBoxLayout(w);
-  auto l = new DLabel(this);
+  l = new DLabel(this);
   l->setFixedSize(100, 100);
   l->setScaledContents(true);
   l->setPixmap(QPixmap(":/images/author.jpg"));
@@ -270,7 +283,7 @@ CenterWindow::CenterWindow(DMainWindow *parent)
                    [=](const QHotkey *hotkey) {
                      if (hotkeys.contains(const_cast<QHotkey *>(hotkey))) {
                        auto &task = scinfos[const_cast<QHotkey *>(hotkey)];
-                       this->runTask(task.process, task.params);
+                       this->runTask(task);
                      }
                    });
   QObject::connect(manager, &AppManager::hotkeyReleased, this,
@@ -312,16 +325,27 @@ QStringList CenterWindow::parseCmdParams(QString str) {
   return args;
 }
 
-bool CenterWindow::runTask(QString program, QString param) {
+bool CenterWindow::runTask(ShortCutEditRes record) {
+
+  if (record.isPlugin) {
+    auto params = parseCmdParams(record.params);
+    QList<QVariant> ps;
+    for (auto &item : params) {
+      ps.append(item);
+    }
+    plgsys->pluginCall(record.provider, record.serviceID, ps);
+    return true;
+  }
+
   QMimeDatabase db;
 
-  QFileInfo info(program);
+  QFileInfo info(record.process);
   auto absp = info.absoluteFilePath();
 
   auto mt = db.mimeTypeForFile(absp);
   auto n = mt.name();
   if (n == "application/x-executable") {
-    if (!pstart.startDetached(absp, parseCmdParams(param))) {
+    if (!pstart.startDetached(absp, parseCmdParams(record.params))) {
       DMessageBox::critical(this, tr("runErr"), pstart.errorString());
       return false;
     }
@@ -345,7 +369,7 @@ void CenterWindow::editTask(int index) {
     wt->setCheckState(res.enabled ? Qt::Checked : Qt::Unchecked);
     tbhotkeys->setItem(index, 0, wt);
     tbhotkeys->setItem(index, 1, new QTableWidgetItem(res.seq.toString()));
-    wt = new QTableWidgetItem(res.process);
+    wt = new QTableWidgetItem(QString(res.process));
     wt->setToolTip(res.process);
     tbhotkeys->setItem(index, 2, wt);
     wt = new QTableWidgetItem(res.params);

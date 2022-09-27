@@ -30,7 +30,7 @@ void TestPlugin::unload() {
 
 QString TestPlugin::pluginName() { return "TestPlugin"; }
 
-QByteArray TestPlugin::provider() { return "testpro"; }
+QString TestPlugin::provider() { return "testpro"; }
 
 QString TestPlugin::pluginAuthor() { return WINGSUMMER; }
 
@@ -55,6 +55,9 @@ QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
       testhotkey = registerHotkey(
           QKeySequence(Qt::KeyboardModifier::ControlModifier |
                        Qt::KeyboardModifier::AltModifier | Qt::Key_Q));
+      if (testhotkey.isNull()) {
+        tbinfo->append(QString("registerHotkey Error!"));
+      }
     }
     break;
   case RemoteCallRes:
@@ -64,8 +67,25 @@ QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
                        .arg(params.first().value<QUuid>().toString()));
     break;
   case 0:
+    if (params.count()) {
+      auto param = params.first();
+      if (param.canConvert(QMetaType::Int)) {
+        tbinfo->append(QString("[func1 call] : %1").arg(param.value<int>()));
+      }
+    }
     break;
   case 1:
+    if (params.count()) {
+      QStringList res;
+      for (auto &item : params) {
+        if (item.canConvert(QMetaType::QString)) {
+          res.append(item.value<QString>());
+        } else if (item.canConvert(QMetaType::QStringList)) {
+          res += item.value<QStringList>();
+        }
+      }
+      tbinfo->append(QString("[func2 call] : ") + res.join(';'));
+    }
     break;
   case 2:
     break;

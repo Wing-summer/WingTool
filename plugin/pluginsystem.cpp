@@ -275,7 +275,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   return false;
                 });
         connect(p, &IWingToolPlg::remoteCall, this,
-                [=](const QByteArray provider, const QByteArray callback,
+                [=](const QString provider, const QString callback,
                     QList<QVariant> params) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
@@ -334,6 +334,19 @@ QList<QKeySequence> PluginSystem::pluginRegisteredHotkey(IWingToolPlg *plg) {
     keys.append(hk->shortcut());
   }
   return keys;
+}
+
+bool PluginSystem::pluginCall(QString provider, int serviceID,
+                              QList<QVariant> params) {
+  if (serviceID < 0)
+    return false;
+
+  auto i = loadedProvider.indexOf(provider);
+  if (i < 0)
+    return false;
+
+  m_plgs[i]->pluginServicePipe(serviceID, params);
+  return true;
 }
 
 IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid, int &index) {

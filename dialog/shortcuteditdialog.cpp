@@ -91,12 +91,20 @@ void ShortCutEditDialog::on_accept() {
     return;
   }
 
-  res.process = fcedit->text();
+  res.isPlugin = ps->getSelectedIndex() >= 0;
 
-  if (res.process.isEmpty()) {
-    DMessageManager::instance()->sendMessage(this, ProgramIcon,
-                                             tr("NoProcessSet"));
-    return;
+  if (res.isPlugin) {
+    auto sel = ps->getSelectedPlg();
+    res.process = sel->pluginName();
+    res.serviceID = cbService->currentIndex();
+    res.provider = sel->provider();
+  } else {
+    if (res.process.isEmpty()) {
+      DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                               tr("NoProcessSet"));
+      return;
+    }
+    res.process = fcedit->text();
   }
 
   res.params = dledit->text();

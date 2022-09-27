@@ -39,7 +39,7 @@ public:
 
 private:
   QStringList parseCmdParams(QString str);
-  bool runTask(QString program, QString param);
+  bool runTask(ShortCutEditRes record);
   void editTask(int index);
 
   void on_editHotkey();

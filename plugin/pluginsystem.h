@@ -42,6 +42,8 @@ public:
 
   QList<QKeySequence> pluginRegisteredHotkey(IWingToolPlg *plg);
 
+  bool pluginCall(QString provider, int serviceID, QList<QVariant> params);
+
 private:
   IWingToolPlg *loopUpHotkey(QUuid uuid, int &index);
 

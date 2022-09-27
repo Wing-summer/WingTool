@@ -22,7 +22,7 @@ public:
   bool init(QList<WingPluginInfo> loadedplugin) override;
   void unload() override;
   QString pluginName() override;
-  QByteArray provider() override;
+  QString provider() override;
   QString pluginAuthor() override;
   Catagorys pluginCatagory() override;
   uint pluginVersion() override;

@@ -13,7 +13,10 @@ struct ShortCutEditRes {
   bool enabled;
   QKeySequence seq;
   QString process;
+  int serviceID;
+  QString provider;
   QString params;
+  bool isPlugin;
 };
 
 class Utilities {

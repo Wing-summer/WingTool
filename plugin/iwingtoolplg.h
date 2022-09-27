@@ -34,7 +34,7 @@ struct WingPluginInfo {
   QString pluginName;
   QString pluginAuthor;
   uint pluginVersion;
-  QByteArray provider;
+  QString provider;
   QString pluginComment;
 };
 
@@ -98,7 +98,7 @@ public:
   virtual bool init(QList<WingPluginInfo> loadedplugin) = 0;
   virtual void unload() = 0;
   virtual QString pluginName() = 0; // 插件的名称
-  virtual QByteArray provider() = 0; // 插件提供者，作为插件的唯一标识
+  virtual QString provider() = 0; // 插件提供者，作为插件的唯一标识
   virtual QString pluginAuthor() = 0;
   virtual Catagorys pluginCatagory() = 0;
   virtual uint pluginVersion() = 0;
@@ -125,9 +125,9 @@ signals:
   bool unregisterHotkey(const QUuid id);
 
   // 跨插件函数远程调用，其中 puid 为插件的唯一标识，
-  // callback 为回调句柄（通常字符串）， params 为远程调用的参数
-  RemoteCallError remoteCall(const QByteArray provider,
-                             const QByteArray callback, QList<QVariant> params);
+  // callback 为回调函数名称， params 为远程调用的参数
+  RemoteCallError remoteCall(const QString provider, const QString callback,
+                             QList<QVariant> params);
 
 public slots:
   // 宿主开始回调函数时候使用，第一个参数是函数服务索引，第二个是参数集合
