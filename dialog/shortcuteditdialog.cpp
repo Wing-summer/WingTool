@@ -26,6 +26,12 @@ ShortCutEditDialog::ShortCutEditDialog(bool enabled, QKeySequence seq,
   addContent(ksedit);
   addSpacing(10);
 
+  addContent(new DLabel(tr("Plugin"), this));
+  addSpacing(5);
+  ps = new PluginSelector(this);
+  addContent(ps);
+  addSpacing(10);
+
   addContent(new DLabel(tr("FilePath"), this));
   addSpacing(5);
   fcedit = new DFileChooserEdit(this);

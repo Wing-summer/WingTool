@@ -4,5 +4,6 @@
         <file>sponsor.png</file>
         <file>images/author.jpg</file>
         <file>images/close.png</file>
+        <file>images/plugin.png</file>
     </qresource>
 </RCC>

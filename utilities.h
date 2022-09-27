@@ -1,6 +1,8 @@
 #ifndef UTILIES_H
 #define UTILIES_H
 
+#include "plugin/iwingtoolplg.h"
+#include <QIcon>
 #include <QKeySequence>
 #include <QString>
 
@@ -12,6 +14,16 @@ struct ShortCutEditRes {
   QKeySequence seq;
   QString process;
   QString params;
+};
+
+class Utilities {
+public:
+  static QIcon processPluginIcon(IWingToolPlg *plg) {
+    if (plg->pluginIcon().availableSizes().count()) {
+      return plg->pluginIcon();
+    }
+    return ICONRES("plugin");
+  }
 };
 
 #endif // UTILIES_H

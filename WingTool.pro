@@ -21,8 +21,9 @@ SOURCES += \
     class/settings.cpp \
     plugin/pluginsystem.cpp \
     class/settingmanager.cpp \
-    dialog/shortcuteditdialog.cpp
-
+    dialog/shortcuteditdialog.cpp \
+    control/pluginselector.cpp \
+    dialog/pluginseldialog.cpp
 RESOURCES +=         resources.qrc
 
 HEADERS += \
@@ -39,4 +40,6 @@ HEADERS += \
     plugin/iwingtoolplg.h \
     class/settingmanager.h \
     dialog/shortcuteditdialog.h \
-    utilies.h
+    control/pluginselector.h \
+    dialog/pluginseldialog.h \
+    utilities.h

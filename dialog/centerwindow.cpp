@@ -6,6 +6,7 @@
 #include <DMessageManager>
 #include <DTextBrowser>
 #include <DTitlebar>
+#include <QCloseEvent>
 #include <QDesktopServices>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -16,7 +17,8 @@
 #include <QVector>
 
 CenterWindow::CenterWindow(DMainWindow *parent)
-    : DMainWindow(parent), manager(AppManager::instance()) {
+    : DMainWindow(parent), manager(AppManager::instance()),
+      sm(SettingManager::instance()) {
   QIcon picon = ProgramIcon;
   setWindowTitle(tr("CenterWindow"));
   setMinimumSize(700, 500);
@@ -114,6 +116,78 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   // ToolBox
   w = new QWidget(this);
 
+  // 左侧
+  auto tlayout = new QHBoxLayout(w);
+  auto tvlayout = new QVBoxLayout;
+
+  auto gridsize = sm->toolGridSize();
+  auto gw = new QWidget(w);
+  gw->setFixedSize(gridsize * 3, gridsize * 3);
+  auto mlayout = new QGridLayout(gw);
+  mlayout->setMargin(1);
+
+  for (int i = 0; i < 9; i++) {
+    auto lbl = new DIconButton(this);
+    lbl->setFixedSize(gridsize - 2, gridsize - 2);
+    lbl->setIconSize(QSize(gridsize / 2, gridsize / 2));
+    lbl->setCheckable(true);
+    auto in = std::div(i, 3);
+    mlayout->addWidget(lbl, in.quot, in.rem, Qt::AlignCenter);
+    lbls[i] = lbl;
+    connect(lbl, &DIconButton::clicked, this, [=] {
+
+    });
+  }
+  lbls[4]->setIcon(ICONRES("close"));
+
+  tvlayout->addWidget(gw, 0, Qt::AlignCenter);
+  tbtoolinfo = new DTextBrowser(w);
+  tbtoolinfo->setUndoRedoEnabled(false);
+  tvlayout->addWidget(tbtoolinfo);
+
+  group = new DButtonBox(this);
+  blist.clear(); // 重新征用
+  b = new DButtonBoxButton(tr("Edit"), this);
+  connect(b, &DButtonBoxButton::clicked, this, [=] {});
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Delete"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_removeHotkey);
+  blist.append(b);
+  group->setButtonList(blist, false);
+  tvlayout->addWidget(group);
+  tlayout->addLayout(tvlayout);
+
+  // 右侧
+  tvlayout = new QVBoxLayout;
+
+  group = new DButtonBox(this);
+  // 再来征用一次
+  blist.clear();
+  b = new DButtonBoxButton(tr("Add"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_addToolWin);
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Remove"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_removeToolWin);
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Edit"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_editToolWin);
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Up"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_upToolWin);
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Down"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_downToolWin);
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Clear"), this);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_clearToolWin);
+  blist.append(b);
+  group->setButtonList(blist, false);
+  tvlayout->addWidget(group);
+
+  lstoolwin = new DListWidget(w);
+  tvlayout->addWidget(lstoolwin);
+
+  tlayout->addLayout(tvlayout);
   tabs->addTab(w, tr("ToolBox"));
 
   // Plugins
@@ -172,6 +246,11 @@ CenterWindow::CenterWindow(DMainWindow *parent)
                      tbhotkeys->item(index, 0)->setCheckState(
                          value ? Qt::Checked : Qt::Unchecked);
                    });
+}
+
+void CenterWindow::show(CenterWindow::TabPage index) {
+  tabs->setCurrentIndex(int(index));
+  DMainWindow::show();
 }
 
 QStringList CenterWindow::parseCmdParams(QString str) {
@@ -298,4 +377,21 @@ void CenterWindow::enableSelectedHotkeys(bool enable) {
   for (auto &item : selrows) {
     manager->enableHotKey(item.row(), enable);
   }
+}
+
+void CenterWindow::on_editToolWin() {}
+
+void CenterWindow::on_removeToolWin() {}
+
+void CenterWindow::on_clearToolWin() {}
+
+void CenterWindow::on_addToolWin() {}
+
+void CenterWindow::on_upToolWin() {}
+
+void CenterWindow::on_downToolWin() {}
+
+void CenterWindow::closeEvent(QCloseEvent *event) {
+  event->ignore();
+  hide();
 }

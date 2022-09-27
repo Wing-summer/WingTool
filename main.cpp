@@ -1,6 +1,8 @@
 #include "class/appmanager.h"
+#include "class/settingmanager.h"
 #include "class/wingapplication.h"
 #include "dialog/centerwindow.h"
+#include "plugin/pluginsystem.h"
 
 #include <DApplication>
 #include <DApplicationSettings>
@@ -48,9 +50,9 @@ int main(int argc, char *argv[]) {
   a.setApplicationName(QObject::tr("WingTool"));
   a.setApplicationVersion("1.0.0");
 
-  QIcon picon(":/images/logo.svg");
+  QIcon picon = ProgramIcon;
   a.setProductIcon(picon);
-  a.setProductName(QObject::tr("WingHexExplorer"));
+  a.setProductName(QObject::tr("WingTool"));
   a.setApplicationDescription("This is a dtk template application.");
 
   a.loadTranslator();
@@ -72,22 +74,50 @@ int main(int argc, char *argv[]) {
   DApplicationSettings as;
   Q_UNUSED(as)
 
+  /*== 以下在主函数初始化确保单例 ==*/
+  /* 之后不得使用构造函数的方式调用类 */
+
+  // 初始化软件配置
+  SettingManager sm;
+
   // 初始化程序基础驱动
-  AppManager manger;
+  AppManager manager;
+
+  // 初始化插件系统
+  PluginSystem plgsys;
+
+  /*===========================*/
 
   CenterWindow w;
 
   // 初始化托盘
   QSystemTrayIcon systray;
   QMenu sysmenu;
-  systray.setContextMenu(&sysmenu);
+  auto menu = &sysmenu;
+  auto ac = new QAction(QObject::tr("ShowMain"), menu);
+  QObject::connect(ac, &QAction::triggered,
+                   [&w] { w.show(CenterWindow::TabPage::General); });
+  sysmenu.addAction(ac);
+  sysmenu.addSeparator();
+  ac = new QAction(QObject::tr("About"), menu);
+  QObject::connect(ac, &QAction::triggered,
+                   [&w] { w.show(CenterWindow::TabPage::AboutAuthor); });
+  sysmenu.addAction(ac);
+  ac = new QAction(QObject::tr("Sponsor"), menu);
+  QObject::connect(ac, &QAction::triggered,
+                   [&w] { w.show(CenterWindow::TabPage::Sponsor); });
+  sysmenu.addAction(ac);
+  ac = new QAction(QObject::tr("Exit"), menu);
+  QObject::connect(ac, &QAction::triggered, [] { QApplication::exit(0); });
+  sysmenu.addAction(ac);
+  systray.setContextMenu(menu);
   systray.setIcon(picon);
   systray.show();
 
   QObject::connect(&systray, &QSystemTrayIcon::activated,
                    [&w](QSystemTrayIcon::ActivationReason reason) {
                      if (reason == QSystemTrayIcon::ActivationReason::Trigger)
-                       w.show();
+                       w.show(CenterWindow::TabPage::General);
                    });
 
   Dtk::Widget::moveToCenter(&w);

@@ -45,13 +45,15 @@ signals:
 private:
   EventMonitor monitor;
   QList<QHotkey *> hotkeys;
-  QList<QString> execs;
+  QStringList execs;
 
   bool ignoremsg = false;
 
   static AppManager *m_instance;
 
   ToolWindow toolwin;
+
+  QList<QKeySequence> registeredSeq; // 已注册的键盘序列
 };
 
 #endif // APPMANAGER_H

@@ -2,7 +2,8 @@
 #define CENTERWINDOW_H
 
 #include "class/appmanager.h"
-#include "utilies.h"
+#include "class/settingmanager.h"
+#include "utilities.h"
 #include <DCheckBox>
 #include <DDialog>
 #include <DListWidget>
@@ -19,7 +20,21 @@ DWIDGET_USE_NAMESPACE
 class CenterWindow : public DMainWindow {
   Q_OBJECT
 public:
+  enum class TabPage {
+    General,
+    Hotkeys,
+    ToolBox,
+    Plugins,
+    AboutAuthor,
+    Sponsor
+  };
+
+  Q_ENUM(TabPage)
+
+public:
   CenterWindow(DMainWindow *parent = nullptr);
+
+  void show(TabPage index);
 
 private:
   QStringList parseCmdParams(QString str);
@@ -32,23 +47,36 @@ private:
   void on_addHotkey();
   void enableSelectedHotkeys(bool enable);
 
+  void on_editToolWin();
+  void on_removeToolWin();
+  void on_clearToolWin();
+  void on_addToolWin();
+  void on_upToolWin();
+  void on_downToolWin();
+
+protected:
+  void closeEvent(QCloseEvent *event) override;
+
 private:
   QList<QAction *> hkcmenu;
 
 private:
   AppManager *manager;
+  SettingManager *sm;
 
   DTabWidget *tabs;
 
   DTableWidget *tbhotkeys;
   DMenu *tbmenu;
 
-  DListWidget *lwplgs;
-  DTextBrowser *tbplginfo;
+  DListWidget *lwplgs, *lstoolwin;
+  DTextBrowser *tbplginfo, *tbtoolinfo;
 
   DCheckBox *cbauto; // 开机自启动
 
   QProcess pstart;
+
+  DIconButton *lbls[9] = {nullptr};
 
 private:
   QList<ShortCutEditRes> scinfos;

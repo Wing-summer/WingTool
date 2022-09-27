@@ -1,9 +1,10 @@
 #ifndef SHORTCUTEDITDIALOG_H
 #define SHORTCUTEDITDIALOG_H
 
-#include "utilies.h"
+#include "utilities.h"
 
 #include "class/appmanager.h"
+#include "control/pluginselector.h"
 #include <DCheckBox>
 #include <DDialog>
 #include <DFileChooserEdit>
@@ -29,8 +30,9 @@ protected:
 
 private:
   AppManager *manager;
-
   ShortCutEditRes res;
+
+  PluginSelector *ps;
   DCheckBox *cb;
   DFileChooserEdit *fcedit;
   DLineEdit *dledit;

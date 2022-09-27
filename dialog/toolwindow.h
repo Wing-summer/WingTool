@@ -23,9 +23,22 @@ public slots:
   // 最后只能用自己封装好的鼠标 Hook 进行通知
   void sendMousePosUpdated();
 
+  // 表示选择结束
+  void finished();
+
+signals:
+  // 当选中有效任务时会触发
+  // 注：当 index >= 4 时，会自动减1，即为实际任务索引
+  // 也就是说，收到信号无需转化
+  void triggered(int index);
+
 private:
   QGridLayout *mlayout;
   DIconButton *lbls[9] = {nullptr};
+
+  QPoint m_sel;
+
+  int gridtotal;
 };
 
 #endif // TOOLWINDOW_H
