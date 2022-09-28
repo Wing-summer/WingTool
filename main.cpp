@@ -82,15 +82,14 @@ int main(int argc, char *argv[]) {
   // 初始化软件配置
   SettingManager sm;
 
-  QObject::connect(&sm, &SettingManager::getHokeysBuffer, &w,
-                   &CenterWindow::getHokeysBuffer);
-  QObject::connect(&sm, &SettingManager::getToolLeftBuffer, &w,
-                   &CenterWindow::getToolLeftBuffer);
-  QObject::connect(&sm, &SettingManager::getToolRightBuffer, &w,
-                   &CenterWindow::getToolRightBuffer);
   QObject::connect(&sm, &SettingManager::loadingFinish, &w,
-                   &CenterWindow::loadingFinish);
-
+                   &CenterWindow::initSettings);
+  QObject::connect(&w, &CenterWindow::getHokeysBuffer, &sm,
+                   &SettingManager::getHokeysBuffer);
+  QObject::connect(&w, &CenterWindow::getToolLeftBuffer, &sm,
+                   &SettingManager::getToolLeftBuffer);
+  QObject::connect(&w, &CenterWindow::getToolRightBuffer, &sm,
+                   &SettingManager::getToolRightBuffer);
   sm.loadSettings();
 
   // 初始化程序基础驱动

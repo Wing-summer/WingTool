@@ -1,7 +1,7 @@
 #ifndef SETTINGMANAGER_H
 #define SETTINGMANAGER_H
 
-#include "QHotkey/qhotkey.h"
+#include "class/hotkey.h"
 #include "utilities.h"
 #include <QObject>
 
@@ -26,12 +26,13 @@ public:
 
 signals:
   void sigToolGridSizeChanged(int v);
+  void loadingFinish();
 
-  void getHokeysBuffer(QList<QHotkey *> &hotkeysBuf,
-                       QMap<QHotkey *, ToolStructInfo> &buffer);
+public slots:
+  void getHokeysBuffer(QList<Hotkey *> &hotkeysBuf,
+                       QMap<Hotkey *, ToolStructInfo> &buffer);
   void getToolLeftBuffer(ToolStructInfo buffer[]);
   void getToolRightBuffer(QList<ToolStructInfo> &buffer);
-  void loadingFinish();
 
 private:
   static SettingManager *m_instance;

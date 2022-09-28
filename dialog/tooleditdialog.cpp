@@ -4,7 +4,7 @@
 #include <QShortcut>
 
 ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
-    : DDialog(parent) {
+    : DDialog(parent), manager(AppManager::instance()) {
 
   // 处于编辑状态直接堵塞所有相应（屏蔽鼠标追踪和热键触发以防干扰）
   manager->blockSignals(true);
@@ -72,6 +72,7 @@ ToolStructInfo ToolEditDialog::getResult() { return res; }
 
 void ToolEditDialog::on_accept() {
   res.isPlugin = ps->getSelectedIndex() >= 0;
+  res.enabled = true; // 指示该信息有效，否则会被忽略
 
   if (res.isPlugin) {
     auto sel = ps->getSelectedPlg();

@@ -13,7 +13,12 @@ ShortCutEditDialog::ShortCutEditDialog(ToolStructInfo res, DMainWindow *parent)
   setWindowTitle(tr("HotkeyEdit"));
 
   cb = new DCheckBox(tr("Enabled"), this);
-  cb->setChecked(res.enabled);
+  if (res.seq.isEmpty()) {
+    cb->setChecked(true);
+  } else {
+    cb->setChecked(res.enabled);
+  }
+
   addContent(cb);
   addSpacing(10);
 

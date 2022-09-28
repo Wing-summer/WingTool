@@ -20,13 +20,9 @@ public:
 
 public:
   Hotkey *registerHotkey(QKeySequence &keyseq, bool isHostHotkey);
-  bool enableHotKey(int index, bool enabled = true);
   bool enableHotKey(Hotkey *hotkey, bool enabled = true);
   bool unregisterHotkey(Hotkey *hotkey);
-  bool unregisterHotkey(int index);
-  bool editHotkey(int index, QKeySequence &keyseq);
   bool editHotkey(Hotkey *hotkey, QKeySequence &keyseq);
-  Hotkey *hotkey(int index);
   void clearHotkey();
 
 signals:

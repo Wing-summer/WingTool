@@ -55,13 +55,14 @@ private:
   void on_upToolWin();
   void on_downToolWin();
 
-public slots:
-  void getHokeysBuffer(QList<QHotkey *> &hotkeysBuf,
-                       QMap<QHotkey *, ToolStructInfo> &buffer);
+signals:
+  void getHokeysBuffer(QList<Hotkey *> &hotkeysBuf,
+                       QMap<Hotkey *, ToolStructInfo> &buffer);
   void getToolLeftBuffer(ToolStructInfo buffer[]);
   void getToolRightBuffer(QList<ToolStructInfo> &buffer);
-  void loadingFinish();
 
+public slots:
+  void initSettings();
   void initPluginSys();
   void initAppManger();
 
@@ -91,10 +92,10 @@ private:
   DIconButton *lbls[9] = {nullptr};
 
 private:
-  QMap<QHotkey *, ToolStructInfo> scinfos; // 用于 Hotkeys
-  ToolStructInfo toolinfos[9];             // 用于 Tool 左侧
-  QList<ToolStructInfo> wintoolinfos;      // 用于 WinTool（ Tool 右侧 ）
-  QList<QHotkey *> hotkeys;
+  QMap<Hotkey *, ToolStructInfo> scinfos; // 用于 Hotkeys
+  QList<Hotkey *> hotkeys;                // Hotkeys 方便进行检索
+  ToolStructInfo toolinfos[9]; // 用于 Tool 左侧，索引 4 成员不用保留
+  QList<ToolStructInfo> wintoolinfos; // 用于 WinTool（ Tool 右侧 ）
 };
 
 #endif // CENTERWINDOW_H

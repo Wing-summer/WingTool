@@ -52,3 +52,10 @@ void SettingManager::setToolGridSize(int v) {
     emit sigToolGridSizeChanged(v);
   }
 }
+
+void SettingManager::getHokeysBuffer(QList<Hotkey *> &hotkeysBuf,
+                                     QMap<Hotkey *, ToolStructInfo> &buffer) {}
+
+void SettingManager::getToolLeftBuffer(ToolStructInfo buffer[]) {}
+
+void SettingManager::getToolRightBuffer(QList<ToolStructInfo> &buffer) {}

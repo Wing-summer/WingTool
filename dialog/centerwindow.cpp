@@ -1,5 +1,6 @@
 #include "centerwindow.h"
 #include "shortcuteditdialog.h"
+#include "tooleditdialog.h"
 #include <DButtonBox>
 #include <DLabel>
 #include <DMessageBox>
@@ -112,12 +113,15 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     }
     menu->popup(QCursor::pos());
   });
-  connect(tbhotkeys, &DTableWidget::cellClicked, this, [=](int row, int) {
+  connect(tbhotkeys, &DTableWidget::cellClicked, this, [=](int row, int col) {
+    if (col)
+      return;
     if (row < 0 || row >= scinfos.count())
       return;
     auto b = tbhotkeys->item(row, 0)->checkState() == Qt::Checked;
-    scinfos[hotkeys[row]].enabled = b;
-    manager->enableHotKey(row, b);
+    auto hk = hotkeys[row];
+    scinfos[hk].enabled = b;
+    manager->enableHotKey(hk, b);
   });
   connect(tbhotkeys, &DTableWidget::cellDoubleClicked, this,
           [=](int row, int) { this->editTask(row); });
@@ -149,11 +153,49 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     mlayout->addWidget(lbl, in.quot, in.rem, Qt::AlignCenter);
     lbls[i] = lbl;
     btngs->addButton(lbl);
-    connect(lbl, &DIconButton::clicked, this, [=] {
+    connect(lbl, &DIconButton::toggled, this, [=](bool v) {
+      if (v) {
+        auto info = toolinfos[i];
+        if (info.isPlugin) {
+          // 这里的含义是是否为 null
+          if (info.enabled) {
+            auto pi = info.pluginIndex;
+            auto plg = plgsys->plugin(pi);
+            auto e = QMetaEnum::fromType<IWingToolPlg::Catagorys>();
 
+            tbtoolinfo->setText(tr("[Plugin]"));
+            tbtoolinfo->append("");
+            tbtoolinfo->append(QObject::tr("PluginName:") + plg->pluginName());
+            tbtoolinfo->append(tr("Service:") +
+                               plg->pluginServices()[info.serviceID]);
+            tbtoolinfo->append(tr("Params:") + info.params);
+
+            auto fw = tbtoolinfo->fontMetrics().horizontalAdvance('=');
+            tbtoolinfo->append(QString(tbtoolinfo->width() / fw, '='));
+            tbtoolinfo->append(
+                QObject::tr("Catagory:") +
+                QObject::tr(e.valueToKey(int(plg->pluginCatagory()))));
+            tbtoolinfo->append(QObject::tr("Version:") +
+                               QString::number(plg->pluginVersion()));
+            tbtoolinfo->append(QObject::tr("Author:") + plg->pluginAuthor());
+            tbtoolinfo->append(QObject::tr("Comment:") + plg->pluginComment());
+            tbtoolinfo->append(QObject::tr("Provider:") + plg->provider());
+          } else {
+            tbtoolinfo->setText(tr("NoTool"));
+          }
+        } else {
+          if (info.enabled) {
+            tbtoolinfo->setText(tr("[File]"));
+            tbtoolinfo->append("");
+            tbtoolinfo->append(tr("FileName:") + info.process);
+            tbtoolinfo->append(tr("Params:") + info.params);
+          } else {
+            tbtoolinfo->setText(tr("NoTool"));
+          }
+        }
+      }
     });
   }
-  lbls[0]->setChecked(true);
   auto lbl4 = lbls[4];
   lbl4->setIcon(ICONRES("close"));
   lbl4->setCheckable(false);
@@ -162,6 +204,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   tbtoolinfo = new DTextBrowser(w);
   tbtoolinfo->setUndoRedoEnabled(false);
   tvlayout->addWidget(tbtoolinfo);
+
+  lbls[0]->setChecked(true);
 
   group = new DButtonBox(this);
   blist.clear(); // 重新征用
@@ -236,6 +280,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   });
   lstoolwin->setContextMenuPolicy(Qt::CustomContextMenu);
+  lstoolwin->setSelectionMode(QListWidget::SelectionMode::ExtendedSelection);
+  lstoolwin->setDragDropMode(QListWidget::DragDropMode::NoDragDrop);
   connect(lstoolwin, &DListWidget::customContextMenuRequested, this,
           [=] { menu->popup(QCursor::pos()); });
   tvlayout->addWidget(lstoolwin);
@@ -376,7 +422,8 @@ bool CenterWindow::runTask(ToolStructInfo record) {
 void CenterWindow::editTask(int index) {
   if (index < 0 || index >= scinfos.count())
     return;
-  auto &task = scinfos[hotkeys[index]];
+  auto hk = hotkeys[index];
+  auto &task = scinfos[hk];
   ShortCutEditDialog d(task);
   if (d.exec()) {
     auto res = d.getResult();
@@ -392,7 +439,7 @@ void CenterWindow::editTask(int index) {
     tbhotkeys->setItem(index, 3, wt);
 
     task = res;
-    manager->editHotkey(index, res.seq);
+    manager->editHotkey(hk, res.seq);
   }
 }
 
@@ -410,14 +457,14 @@ void CenterWindow::on_removeHotkey() {
     for (auto item : nums) {
       auto hk = hotkeys.takeAt(item);
       scinfos.remove(hk);
-      manager->unregisterHotkey(item);
+      manager->unregisterHotkey(hk);
       tbhotkeys->removeRow(item);
     }
   } else {
     auto row = tbhotkeys->currentRow();
     auto hk = hotkeys.takeAt(row);
     scinfos.remove(hk);
-    manager->unregisterHotkey(row);
+    manager->unregisterHotkey(hk);
     tbhotkeys->removeRow(row);
   }
 }
@@ -462,7 +509,7 @@ void CenterWindow::on_addHotkey() {
 void CenterWindow::enableSelectedHotkeys(bool enable) {
   auto selrows = tbhotkeys->selectionModel()->selectedRows();
   for (auto &item : selrows) {
-    manager->enableHotKey(item.row(), enable);
+    manager->enableHotKey(hotkeys[item.row()], enable);
   }
 }
 
@@ -470,27 +517,41 @@ void CenterWindow::on_editToolWin() {}
 
 void CenterWindow::on_removeToolWin() {}
 
-void CenterWindow::on_clearToolWin() {}
+void CenterWindow::on_clearToolWin() {
+  lstoolwin->clear();
+  wintoolinfos.clear();
+  DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                           tr("ClearSuccess"));
+}
 
-void CenterWindow::on_addToolWin() {}
+void CenterWindow::on_addToolWin() {
+  ToolEditDialog d;
+  if (d.exec()) {
+    auto res = d.getResult();
+    auto index = lstoolwin->currentRow();
+    if (index < 0) {
+      wintoolinfos.append(res);
+
+    } else {
+    }
+  }
+}
 
 void CenterWindow::on_upToolWin() {}
 
 void CenterWindow::on_downToolWin() {}
 
-void CenterWindow::getHokeysBuffer(QList<QHotkey *> &hotkeysBuf,
-                                   QMap<QHotkey *, ToolStructInfo> &buffer) {}
-
-void CenterWindow::getToolLeftBuffer(ToolStructInfo buffer[]) {}
-
-void CenterWindow::getToolRightBuffer(QList<ToolStructInfo> &buffer) {}
-
-void CenterWindow::loadingFinish() {
+void CenterWindow::initSettings() {
   sm = SettingManager::instance();
   auto gridsize = sm->toolGridSize();
   for (auto i = 0; i < 9; i++) {
     lbls[i]->setFixedSize(QSize(gridsize, gridsize));
   }
+  emit this->getHokeysBuffer(hotkeys, scinfos);
+  emit this->getToolLeftBuffer(toolinfos);
+  emit this->getToolRightBuffer(wintoolinfos);
+
+  // 获取完数据后，开始初始化程序配置
 }
 
 void CenterWindow::initPluginSys() {

@@ -71,12 +71,6 @@ Hotkey *AppManager::registerHotkey(QKeySequence &keyseq, bool isHostHotkey) {
   return hotkey;
 }
 
-bool AppManager::enableHotKey(int index, bool enabled) {
-  if (index < 0 || index >= hotkeys.count())
-    return false;
-  return hotkeys[index]->setRegistered(enabled);
-}
-
 bool AppManager::enableHotKey(Hotkey *hotkey, bool enabled) {
   if (hotkey == nullptr)
     return false;
@@ -95,29 +89,6 @@ bool AppManager::unregisterHotkey(Hotkey *hotkey) {
   return true;
 }
 
-bool AppManager::unregisterHotkey(int index) {
-  if (index < 0 || index >= hotkeys.count())
-    return false;
-  auto del = hotkeys[index];
-  registeredSeq.removeOne(del->shortcut());
-  // 由于保证了热键序列唯一性，只需找到一个删除就没了
-  del->disconnect();
-  hotkeys.removeAt(index);
-  delete del;
-  return true;
-}
-
-bool AppManager::editHotkey(int index, QKeySequence &keyseq) {
-  if (index < 0 || index >= hotkeys.count())
-    return false;
-  if (registeredSeq.contains(keyseq))
-    return false;
-  auto del = hotkeys[index];
-  registeredSeq[registeredSeq.indexOf(del->shortcut())] = keyseq;
-  del->setShortcut(keyseq, true);
-  return true;
-}
-
 bool AppManager::editHotkey(Hotkey *hotkey, QKeySequence &keyseq) {
   if (hotkey == nullptr)
     return false;
@@ -127,12 +98,6 @@ bool AppManager::editHotkey(Hotkey *hotkey, QKeySequence &keyseq) {
   registeredSeq[i] = keyseq;
   hotkey->setShortcut(keyseq, true);
   return true;
-}
-
-Hotkey *AppManager::hotkey(int index) {
-  if (index < 0 || index >= hotkeys.count())
-    return nullptr;
-  return hotkeys[index];
 }
 
 void AppManager::clearHotkey() {
