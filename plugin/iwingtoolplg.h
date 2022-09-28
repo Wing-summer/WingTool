@@ -72,7 +72,8 @@ enum HookIndex {
   DoubleClicked = 8,
   MouseWheel = 16,
   MouseMove = 32,
-  MouseDrag = 64
+  MouseDrag = 64,
+  ClipBoardSelection = 128
 };
 Q_DECLARE_METATYPE(HookIndex)
 

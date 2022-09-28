@@ -6,6 +6,7 @@
 #include <DMessageManager>
 #include <DTextBrowser>
 #include <DTitlebar>
+#include <QButtonGroup>
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QHBoxLayout>
@@ -17,9 +18,7 @@
 #include <QVBoxLayout>
 #include <QVector>
 
-CenterWindow::CenterWindow(DMainWindow *parent)
-    : DMainWindow(parent), manager(AppManager::instance()),
-      sm(SettingManager::instance()), plgsys(PluginSystem::instance()) {
+CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   QIcon picon = ProgramIcon;
   setWindowTitle(tr("CenterWindow"));
   setMinimumSize(700, 500);
@@ -133,11 +132,13 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   auto tlayout = new QHBoxLayout(w);
   auto tvlayout = new QVBoxLayout;
 
-  auto gridsize = sm->toolGridSize();
+  auto gridsize = 40; // 默认 40 先
   auto gw = new QWidget(w);
   gw->setFixedSize(gridsize * 3, gridsize * 3);
   auto mlayout = new QGridLayout(gw);
   mlayout->setMargin(1);
+  auto btngs = new QButtonGroup(w);
+  btngs->setExclusive(true); // 设置按钮选中互斥
 
   for (int i = 0; i < 9; i++) {
     auto lbl = new DIconButton(this);
@@ -147,11 +148,15 @@ CenterWindow::CenterWindow(DMainWindow *parent)
     auto in = std::div(i, 3);
     mlayout->addWidget(lbl, in.quot, in.rem, Qt::AlignCenter);
     lbls[i] = lbl;
+    btngs->addButton(lbl);
     connect(lbl, &DIconButton::clicked, this, [=] {
 
     });
   }
-  lbls[4]->setIcon(ICONRES("close"));
+  lbls[0]->setChecked(true);
+  auto lbl4 = lbls[4];
+  lbl4->setIcon(ICONRES("close"));
+  lbl4->setCheckable(false);
 
   tvlayout->addWidget(gw, 0, Qt::AlignCenter);
   tbtoolinfo = new DTextBrowser(w);
@@ -176,28 +181,63 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   group = new DButtonBox(this);
   // 再来征用一次
   blist.clear();
-  b = new DButtonBoxButton(tr("Add"), this);
+  b = new DButtonBoxButton(ICONRES2("add"));
+  b->setIconSize(QSize(20, 20));
+  b->setParent(this);
+  b->setToolTip(tr("Add"));
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_addToolWin);
   blist.append(b);
-  b = new DButtonBoxButton(tr("Remove"), this);
+  b = new DButtonBoxButton(ICONRES2("del"));
+  b->setIconSize(QSize(20, 20));
+  b->setParent(this);
+  b->setToolTip(tr("Remove"));
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_removeToolWin);
   blist.append(b);
-  b = new DButtonBoxButton(tr("Edit"), this);
+  b = new DButtonBoxButton(ICONRES2("edit"));
+  b->setIconSize(QSize(20, 20));
+  b->setParent(this);
+  b->setToolTip(tr("Edit"));
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_editToolWin);
   blist.append(b);
-  b = new DButtonBoxButton(tr("Up"), this);
+  b = new DButtonBoxButton(ICONRES2("up"));
+  b->setIconSize(QSize(20, 20));
+  b->setParent(this);
+  b->setToolTip(tr("Up"));
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_upToolWin);
   blist.append(b);
-  b = new DButtonBoxButton(tr("Down"), this);
+  b = new DButtonBoxButton(ICONRES2("down"));
+  b->setIconSize(QSize(20, 20));
+  b->setParent(this);
+  b->setToolTip(tr("Down"));
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_downToolWin);
   blist.append(b);
-  b = new DButtonBoxButton(tr("Clear"), this);
+  b = new DButtonBoxButton(ICONRES2("clear"));
+  b->setIconSize(QSize(20, 20));
+  b->setParent(this);
+  b->setToolTip(tr("Clear"));
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_clearToolWin);
   blist.append(b);
   group->setButtonList(blist, false);
   tvlayout->addWidget(group);
 
   lstoolwin = new DListWidget(w);
+  menu = new DMenu(lstoolwin);
+  AddMenuAction(tr("Add"), &CenterWindow::on_addToolWin);
+  AddMenuAction(tr("Edit"), &CenterWindow::on_editToolWin);
+  AddMenuAction(tr("Remove"), &CenterWindow::on_removeToolWin);
+  AddMenuAction(tr("Clear"), &CenterWindow::on_clearToolWin);
+  menu->addSeparator();
+  AddMenuAction(tr("Up"), &CenterWindow::on_upToolWin);
+  AddMenuAction(tr("Down"), &CenterWindow::on_downToolWin);
+  AddMenuAction(tr("TopMost"), [=] {
+
+  });
+  AddMenuAction(tr("DownMost"), [=] {
+
+  });
+  lstoolwin->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(lstoolwin, &DListWidget::customContextMenuRequested, this,
+          [=] { menu->popup(QCursor::pos()); });
   tvlayout->addWidget(lstoolwin);
 
   tlayout->addLayout(tvlayout);
@@ -208,10 +248,6 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   auto playout = new QHBoxLayout(w);
   lwplgs = new DListWidget(w);
   playout->addWidget(lwplgs);
-  for (auto item : PluginSystem::instance()->plugins()) {
-    lwplgs->addItem(new QListWidgetItem(Utilities::processPluginIcon(item),
-                                        item->pluginName()));
-  }
 
   tbplginfo = new DTextBrowser(w);
   tbplginfo->setUndoRedoEnabled(false);
@@ -277,27 +313,6 @@ CenterWindow::CenterWindow(DMainWindow *parent)
   l->setScaledContents(true);
   slayout->addWidget(l);
   tabs->addTab(w, tr("Sponsor"));
-
-  //初始化热键事件处理函数
-  QObject::connect(manager, &AppManager::hotkeyTirggered, this,
-                   [=](const QHotkey *hotkey) {
-                     if (hotkeys.contains(const_cast<QHotkey *>(hotkey))) {
-                       auto &task = scinfos[const_cast<QHotkey *>(hotkey)];
-                       this->runTask(task);
-                     }
-                   });
-  QObject::connect(manager, &AppManager::hotkeyReleased, this,
-                   [=](const QHotkey *) {
-
-                   });
-  QObject::connect(
-      manager, &AppManager::hotkeyEnableChanged, this,
-      [=](bool value, const QHotkey *hotkey) {
-        if (hotkeys.contains(const_cast<QHotkey *>(hotkey))) {
-          tbhotkeys->item(hotkeys.indexOf(const_cast<QHotkey *>(hotkey)), 0)
-              ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
-        }
-      });
 }
 
 void CenterWindow::show(CenterWindow::TabPage index) {
@@ -325,7 +340,7 @@ QStringList CenterWindow::parseCmdParams(QString str) {
   return args;
 }
 
-bool CenterWindow::runTask(ShortCutEditRes record) {
+bool CenterWindow::runTask(ToolStructInfo record) {
 
   if (record.isPlugin) {
     auto params = parseCmdParams(record.params);
@@ -362,7 +377,7 @@ void CenterWindow::editTask(int index) {
   if (index < 0 || index >= scinfos.count())
     return;
   auto &task = scinfos[hotkeys[index]];
-  ShortCutEditDialog d(task.enabled, task.seq, task.process, task.params);
+  ShortCutEditDialog d(task);
   if (d.exec()) {
     auto res = d.getResult();
     auto wt = new QTableWidgetItem;
@@ -420,7 +435,7 @@ void CenterWindow::on_addHotkey() {
   ShortCutEditDialog d;
   if (d.exec()) {
     auto res = d.getResult();
-    auto hk = manager->registerHotkey(res.seq);
+    auto hk = manager->registerHotkey(res.seq, true);
     if (hk == nullptr) {
       DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                                tr("HotkeyRegisterFail"));
@@ -462,6 +477,52 @@ void CenterWindow::on_addToolWin() {}
 void CenterWindow::on_upToolWin() {}
 
 void CenterWindow::on_downToolWin() {}
+
+void CenterWindow::getHokeysBuffer(QList<QHotkey *> &hotkeysBuf,
+                                   QMap<QHotkey *, ToolStructInfo> &buffer) {}
+
+void CenterWindow::getToolLeftBuffer(ToolStructInfo buffer[]) {}
+
+void CenterWindow::getToolRightBuffer(QList<ToolStructInfo> &buffer) {}
+
+void CenterWindow::loadingFinish() {
+  sm = SettingManager::instance();
+  auto gridsize = sm->toolGridSize();
+  for (auto i = 0; i < 9; i++) {
+    lbls[i]->setFixedSize(QSize(gridsize, gridsize));
+  }
+}
+
+void CenterWindow::initPluginSys() {
+  plgsys = PluginSystem::instance();
+  for (auto item : PluginSystem::instance()->plugins()) {
+    lwplgs->addItem(new QListWidgetItem(Utilities::processPluginIcon(item),
+                                        item->pluginName()));
+  }
+}
+
+void CenterWindow::initAppManger() {
+  manager = AppManager::instance();
+
+  //初始化热键事件处理函数
+  connect(manager, &AppManager::hotkeyTirggered, this,
+          [=](const Hotkey *hotkey) {
+            if (hotkey->isHostHotkey()) {
+              auto &task = scinfos[const_cast<Hotkey *>(hotkey)];
+              this->runTask(task);
+            }
+          });
+  connect(manager, &AppManager::hotkeyReleased, this, [=](const Hotkey *) {
+
+  });
+  connect(manager, &AppManager::hotkeyEnableChanged, this,
+          [=](bool value, const Hotkey *hotkey) {
+            if (hotkey->isHostHotkey()) {
+              tbhotkeys->item(hotkeys.indexOf(const_cast<Hotkey *>(hotkey)), 0)
+                  ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
+            }
+          });
+}
 
 void CenterWindow::closeEvent(QCloseEvent *event) {
   event->ignore();

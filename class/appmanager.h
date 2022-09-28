@@ -1,8 +1,8 @@
 #ifndef APPMANAGER_H
 #define APPMANAGER_H
 
-#include "QHotkey/qhotkey.h"
 #include "class/eventmonitor.h"
+#include "class/hotkey.h"
 #include "dialog/toolwindow.h"
 #undef Bool
 #undef Unsorted
@@ -19,14 +19,14 @@ public:
   static AppManager *instance();
 
 public:
-  QHotkey *registerHotkey(QKeySequence &keyseq);
+  Hotkey *registerHotkey(QKeySequence &keyseq, bool isHostHotkey);
   bool enableHotKey(int index, bool enabled = true);
-  bool enableHotKey(QHotkey *hotkey, bool enabled = true);
-  bool unregisterHotkey(QHotkey *hotkey);
+  bool enableHotKey(Hotkey *hotkey, bool enabled = true);
+  bool unregisterHotkey(Hotkey *hotkey);
   bool unregisterHotkey(int index);
   bool editHotkey(int index, QKeySequence &keyseq);
-  bool editHotkey(QHotkey *hotkey, QKeySequence &keyseq);
-  QHotkey *hotkey(int index);
+  bool editHotkey(Hotkey *hotkey, QKeySequence &keyseq);
+  Hotkey *hotkey(int index);
   void clearHotkey();
 
 signals:
@@ -38,15 +38,15 @@ signals:
   void mouseMove(int x, int y);
   void mouseDrag(int x, int y);
 
-  void hotkeyTirggered(const QHotkey *hotkey);
-  void hotkeyReleased(const QHotkey *hotkey);
-  void hotkeyEnableChanged(bool value, const QHotkey *hotkey);
+  void hotkeyTirggered(const Hotkey *hotkey);
+  void hotkeyReleased(const Hotkey *hotkey);
+  void hotkeyEnableChanged(bool value, const Hotkey *hotkey);
 
   void selectionTextChanged(const QString &selectedText);
 
 private:
   EventMonitor monitor;
-  QList<QHotkey *> hotkeys;
+  QList<Hotkey *> hotkeys;
   QStringList execs;
 
   bool ignoremsg = false;

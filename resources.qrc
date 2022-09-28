@@ -5,5 +5,11 @@
         <file>images/author.jpg</file>
         <file>images/close.png</file>
         <file>images/plugin.png</file>
+        <file>images/add.svg</file>
+        <file>images/clear.svg</file>
+        <file>images/del.svg</file>
+        <file>images/down.svg</file>
+        <file>images/edit.svg</file>
+        <file>images/up.svg</file>
     </qresource>
 </RCC>

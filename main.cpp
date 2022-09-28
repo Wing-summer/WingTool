@@ -74,21 +74,34 @@ int main(int argc, char *argv[]) {
   DApplicationSettings as;
   Q_UNUSED(as)
 
+  CenterWindow w;
+
   /*== 以下在主函数初始化确保单例 ==*/
-  /* 之后不得使用构造函数的方式调用类 */
+  /* 之后不得使用构造函数的方式使用 */
 
   // 初始化软件配置
   SettingManager sm;
 
+  QObject::connect(&sm, &SettingManager::getHokeysBuffer, &w,
+                   &CenterWindow::getHokeysBuffer);
+  QObject::connect(&sm, &SettingManager::getToolLeftBuffer, &w,
+                   &CenterWindow::getToolLeftBuffer);
+  QObject::connect(&sm, &SettingManager::getToolRightBuffer, &w,
+                   &CenterWindow::getToolRightBuffer);
+  QObject::connect(&sm, &SettingManager::loadingFinish, &w,
+                   &CenterWindow::loadingFinish);
+
+  sm.loadSettings();
+
   // 初始化程序基础驱动
   AppManager manager;
+  w.initAppManger();
 
   // 初始化插件系统
   PluginSystem plgsys;
+  w.initPluginSys();
 
   /*===========================*/
-
-  CenterWindow w;
 
   // 初始化托盘
   QSystemTrayIcon systray;

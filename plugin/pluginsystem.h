@@ -40,6 +40,8 @@ public:
   QList<IWingToolPlg *> plugins();
   IWingToolPlg *plugin(int index);
 
+  int pluginCounts();
+
   QList<QKeySequence> pluginRegisteredHotkey(IWingToolPlg *plg);
 
   bool pluginCall(QString provider, int serviceID, QList<QVariant> params);
@@ -54,7 +56,7 @@ private:
   QStringList loadedProvider;                 // 已加载的插件 PUID
   QList<IWingToolPlg *> m_plgs;               // 已加载的插件集合
   QMap<IWingToolPlg *, QList<QUuid>> m_plghk; // 注册的热键句柄集合
-  QMap<QUuid, QHotkey *> uhmap;               // UUID 和 QHotkey 的对应图
+  QMap<QUuid, Hotkey *> uhmap;                // UUID 和 QHotkey 的对应图
   QMap<IWingToolPlg::Catagorys, QList<IWingToolPlg *>>
       m_catplgs; // 对应类别的插件集合
 

@@ -17,6 +17,7 @@ PluginSystem::PluginSystem(QObject *parent)
   InitDispathcer(HookIndex::MouseWheel);
   InitDispathcer(HookIndex::DoubleClicked);
   InitDispathcer(HookIndex::MouseDrag);
+  InitDispathcer(HookIndex::ClipBoardSelection);
 
   // 初始化类别插件容器
 #define InitCatagory(catagory)                                                 \
@@ -68,9 +69,18 @@ PluginSystem::PluginSystem(QObject *parent)
       item->doubleClicked(x, y);
     }
   });
+  connect(manager, &AppManager::selectionTextChanged, this,
+          [=](const QString &selectedText) {
+            for (auto item : dispatcher[HookIndex::ClipBoardSelection]) {
+              item->selectionTextChanged(selectedText);
+            }
+          });
   connect(manager, &AppManager::hotkeyTirggered, this,
-          [=](const QHotkey *hotkey) {
-            auto uuid = uhmap.key(const_cast<QHotkey *>(hotkey), QUuid());
+          [=](const Hotkey *hotkey) {
+            if (hotkey->isHostHotkey())
+              return;
+
+            auto uuid = uhmap.key(const_cast<Hotkey *>(hotkey), QUuid());
             if (uuid.isNull())
               return;
             int id;
@@ -79,8 +89,11 @@ PluginSystem::PluginSystem(QObject *parent)
               plg->pluginServicePipe(HotKeyTriggered, {uuid});
           });
   connect(manager, &AppManager::hotkeyReleased, this,
-          [=](const QHotkey *hotkey) {
-            auto uuid = uhmap.key(const_cast<QHotkey *>(hotkey), QUuid());
+          [=](const Hotkey *hotkey) {
+            if (hotkey->isHostHotkey())
+              return;
+
+            auto uuid = uhmap.key(const_cast<Hotkey *>(hotkey), QUuid());
             if (uuid.isNull())
               return;
             int id;
@@ -89,8 +102,11 @@ PluginSystem::PluginSystem(QObject *parent)
               plg->pluginServicePipe(HotKeyReleased, {uuid});
           });
   connect(manager, &AppManager::hotkeyEnableChanged, this,
-          [=](bool value, const QHotkey *hotkey) {
-            auto uuid = uhmap.key(const_cast<QHotkey *>(hotkey), QUuid());
+          [=](bool value, const Hotkey *hotkey) {
+            if (hotkey->isHostHotkey())
+              return;
+
+            auto uuid = uhmap.key(const_cast<Hotkey *>(hotkey), QUuid());
             if (uuid.isNull())
               return;
             int id;
@@ -221,6 +237,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         INSERTSUBSCRIBE(HookIndex::MouseWheel);
         INSERTSUBSCRIBE(HookIndex::DoubleClicked);
         INSERTSUBSCRIBE(HookIndex::MouseDrag);
+        INSERTSUBSCRIBE(HookIndex::ClipBoardSelection);
 
         // 连接信号
         connect(p, &IWingToolPlg::registerHotkey, this,
@@ -228,7 +245,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
                     return QUuid();
-                  auto hk = this->manager->registerHotkey(keyseq);
+                  auto hk = this->manager->registerHotkey(keyseq, false);
                   if (hk) {
                     auto uuid = QUuid::createUuid();
                     m_plghk[sender].append(uuid);
@@ -322,6 +339,8 @@ IWingToolPlg *PluginSystem::plugin(int index) {
     return nullptr;
   return m_plgs[index];
 }
+
+int PluginSystem::pluginCounts() { return m_plgs.count(); }
 
 QList<QKeySequence> PluginSystem::pluginRegisteredHotkey(IWingToolPlg *plg) {
   if (plg == nullptr)

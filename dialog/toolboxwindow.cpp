@@ -1,6 +1,3 @@
 #include "toolboxwindow.h"
 
-ToolBoxWindow::ToolBoxWindow()
-{
-
-}
+ToolBoxWindow::ToolBoxWindow(DMainWindow *parent) : DDialog(parent) {}

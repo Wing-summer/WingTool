@@ -1,6 +1,8 @@
 #ifndef SETTINGMANAGER_H
 #define SETTINGMANAGER_H
 
+#include "QHotkey/qhotkey.h"
+#include "utilities.h"
 #include <QObject>
 
 #define TOOLGRIDSIZE 40
@@ -24,6 +26,12 @@ public:
 
 signals:
   void sigToolGridSizeChanged(int v);
+
+  void getHokeysBuffer(QList<QHotkey *> &hotkeysBuf,
+                       QMap<QHotkey *, ToolStructInfo> &buffer);
+  void getToolLeftBuffer(ToolStructInfo buffer[]);
+  void getToolRightBuffer(QList<ToolStructInfo> &buffer);
+  void loadingFinish();
 
 private:
   static SettingManager *m_instance;

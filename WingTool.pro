@@ -23,7 +23,9 @@ SOURCES += \
     class/settingmanager.cpp \
     dialog/shortcuteditdialog.cpp \
     control/pluginselector.cpp \
-    dialog/pluginseldialog.cpp
+    dialog/pluginseldialog.cpp \
+    dialog/tooleditdialog.cpp \
+    class/hotkey.cpp
 RESOURCES +=         resources.qrc
 
 HEADERS += \
@@ -42,4 +44,6 @@ HEADERS += \
     dialog/shortcuteditdialog.h \
     control/pluginselector.h \
     dialog/pluginseldialog.h \
-    utilities.h
+    utilities.h \
+    dialog/tooleditdialog.h \
+    class/hotkey.h

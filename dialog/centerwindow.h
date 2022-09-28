@@ -39,7 +39,7 @@ public:
 
 private:
   QStringList parseCmdParams(QString str);
-  bool runTask(ShortCutEditRes record);
+  bool runTask(ToolStructInfo record);
   void editTask(int index);
 
   void on_editHotkey();
@@ -54,6 +54,16 @@ private:
   void on_addToolWin();
   void on_upToolWin();
   void on_downToolWin();
+
+public slots:
+  void getHokeysBuffer(QList<QHotkey *> &hotkeysBuf,
+                       QMap<QHotkey *, ToolStructInfo> &buffer);
+  void getToolLeftBuffer(ToolStructInfo buffer[]);
+  void getToolRightBuffer(QList<ToolStructInfo> &buffer);
+  void loadingFinish();
+
+  void initPluginSys();
+  void initAppManger();
 
 protected:
   void closeEvent(QCloseEvent *event) override;
@@ -81,7 +91,9 @@ private:
   DIconButton *lbls[9] = {nullptr};
 
 private:
-  QMap<QHotkey *, ShortCutEditRes> scinfos;
+  QMap<QHotkey *, ToolStructInfo> scinfos; // 用于 Hotkeys
+  ToolStructInfo toolinfos[9];             // 用于 Tool 左侧
+  QList<ToolStructInfo> wintoolinfos;      // 用于 WinTool（ Tool 右侧 ）
   QList<QHotkey *> hotkeys;
 };
 

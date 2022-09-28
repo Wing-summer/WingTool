@@ -1,6 +1,5 @@
 #include "settingmanager.h"
 #include <QApplication>
-#include <QDataStream>
 #include <QFile>
 #include <QStandardPaths>
 
@@ -12,7 +11,19 @@ SettingManager::SettingManager(QObject *parent) : QObject(parent) {
 
 SettingManager *SettingManager::instance() { return m_instance; }
 
-bool SettingManager::loadSettings() { return true; }
+bool SettingManager::loadSettings() {
+  QString strConfigPath =
+      QString("%1/%2/%3/config.conf")
+          .arg(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
+          .arg(qApp->organizationName())
+          .arg(qApp->applicationName());
+
+  QFile f(strConfigPath);
+  if (f.open(QFile::ReadOnly)) {
+    emit this->loadingFinish();
+  }
+  return true;
+}
 
 bool SettingManager::saveSettings() {
   QString strConfigPath =

@@ -19,6 +19,8 @@ public:
   int getSelectedIndex();
   IWingToolPlg *getSelectedPlg();
 
+  bool setSelectedIndex(int index);
+
 signals:
   void finished();
 

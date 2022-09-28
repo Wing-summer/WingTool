@@ -33,3 +33,13 @@ int PluginSelector::getSelectedIndex() { return selplgindex; }
 IWingToolPlg *PluginSelector::getSelectedPlg() {
   return plgsys->plugin(selplgindex);
 }
+
+bool PluginSelector::setSelectedIndex(int index) {
+  if (index < 0 || index >= plgsys->pluginCounts())
+    return false;
+  selplgindex = index;
+  auto plg = plgsys->plugin(index);
+  setIcon(Utilities::processPluginIcon(plg));
+  setText(plg->pluginName());
+  return true;
+}

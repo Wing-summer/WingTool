@@ -55,11 +55,11 @@ AppManager::~AppManager() { clearHotkey(); }
 
 AppManager *AppManager::instance() { return m_instance; }
 
-QHotkey *AppManager::registerHotkey(QKeySequence &keyseq) {
+Hotkey *AppManager::registerHotkey(QKeySequence &keyseq, bool isHostHotkey) {
   if (registeredSeq.contains(keyseq))
     return nullptr;
-  auto hotkey = new QHotkey(keyseq, true);
-  hotkeys += hotkey;
+  auto hotkey = new Hotkey(isHostHotkey, keyseq, true);
+  hotkeys.append(hotkey);
   connect(hotkey, &QHotkey::activated, this,
           [=] { emit this->hotkeyTirggered(hotkey); });
   connect(hotkey, &QHotkey::released, this,
@@ -77,13 +77,13 @@ bool AppManager::enableHotKey(int index, bool enabled) {
   return hotkeys[index]->setRegistered(enabled);
 }
 
-bool AppManager::enableHotKey(QHotkey *hotkey, bool enabled) {
+bool AppManager::enableHotKey(Hotkey *hotkey, bool enabled) {
   if (hotkey == nullptr)
     return false;
   return hotkey->setRegistered(enabled);
 }
 
-bool AppManager::unregisterHotkey(QHotkey *hotkey) {
+bool AppManager::unregisterHotkey(Hotkey *hotkey) {
   auto i = hotkeys.indexOf(hotkey);
   if (i < 0)
     return false;
@@ -118,7 +118,7 @@ bool AppManager::editHotkey(int index, QKeySequence &keyseq) {
   return true;
 }
 
-bool AppManager::editHotkey(QHotkey *hotkey, QKeySequence &keyseq) {
+bool AppManager::editHotkey(Hotkey *hotkey, QKeySequence &keyseq) {
   if (hotkey == nullptr)
     return false;
   auto i = registeredSeq.indexOf(hotkey->shortcut());
@@ -129,7 +129,7 @@ bool AppManager::editHotkey(QHotkey *hotkey, QKeySequence &keyseq) {
   return true;
 }
 
-QHotkey *AppManager::hotkey(int index) {
+Hotkey *AppManager::hotkey(int index) {
   if (index < 0 || index >= hotkeys.count())
     return nullptr;
   return hotkeys[index];

@@ -1,5 +1,5 @@
-#ifndef SHORTCUTEDITDIALOG_H
-#define SHORTCUTEDITDIALOG_H
+#ifndef TOOLWINEDITDIALOG_H
+#define TOOLWINEDITDIALOG_H
 
 #include "utilities.h"
 
@@ -16,12 +16,11 @@
 
 DWIDGET_USE_NAMESPACE
 
-class ShortCutEditDialog : public DDialog {
-  Q_OBJECT
+class ToolEditDialog : public DDialog {
 public:
-  ShortCutEditDialog(ToolStructInfo res = ToolStructInfo(),
-                     DMainWindow *parent = nullptr);
-  ToolStructInfo getResult();
+  ToolEditDialog(ToolStructInfo res = ToolStructInfo(),
+                    DMainWindow *parent = nullptr);
+  ToolStructInfo getResult(); // 这里的 enabled 和 seq 保留不使用
 
 private:
   void on_accept();
@@ -35,13 +34,11 @@ private:
   ToolStructInfo res;
 
   PluginSelector *ps;
-  DCheckBox *cb;
   DFileChooserEdit *fcedit;
   DLineEdit *dledit;
-  DKeySequenceEdit *ksedit;
 
   DLabel *lblp;
   DComboBox *cbService;
 };
 
-#endif // SHORTCUTEDITDIALOG_H
+#endif // TOOLWINEDITDIALOG_H
