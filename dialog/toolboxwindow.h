@@ -12,6 +12,11 @@ class ToolBoxWindow : public DDialog {
 public:
   ToolBoxWindow(DMainWindow *parent = nullptr);
 
+signals:
+  void addItem(QListWidgetItem *item, int index = -1); // -1 表示追加
+  void rmItem(int index);                              // -1 表示清空
+  void mvItem(int from, int to);
+
 private:
   DListWidget *lstool;
 };

@@ -6,7 +6,9 @@
 #include "plugin/pluginsystem.h"
 #include "utilities.h"
 #include <DCheckBox>
+#include <DComboBox>
 #include <DDialog>
+#include <DKeySequenceEdit>
 #include <DListWidget>
 #include <DMainWindow>
 #include <DMenu>
@@ -90,6 +92,9 @@ private:
   QProcess pstart;
 
   DIconButton *lbls[9] = {nullptr};
+
+  DKeySequenceEdit *kseqTool;
+  DComboBox *cbMod, *cbMouseBtn;
 
 private:
   QMap<Hotkey *, ToolStructInfo> scinfos; // 用于 Hotkeys

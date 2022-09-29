@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
   a.setOrganizationName("WingCloud");
   a.setApplicationName(QObject::tr("WingTool"));
   a.setApplicationVersion("1.0.0");
+  a.setApplicationLicense("AGPL-3.0");
 
   QIcon picon = ProgramIcon;
   a.setProductIcon(picon);
@@ -128,8 +129,10 @@ int main(int argc, char *argv[]) {
 
   QObject::connect(&systray, &QSystemTrayIcon::activated,
                    [&w](QSystemTrayIcon::ActivationReason reason) {
-                     if (reason == QSystemTrayIcon::ActivationReason::Trigger)
+                     if (reason == QSystemTrayIcon::ActivationReason::Trigger) {
                        w.show(CenterWindow::TabPage::General);
+                       Utilities::activeWindowFromDock(w.winId());
+                     }
                    });
 
   Dtk::Widget::moveToCenter(&w);

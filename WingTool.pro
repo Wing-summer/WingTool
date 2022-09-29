@@ -37,7 +37,6 @@ HEADERS += \
     dialog/centerwindow.h \
     dialog/toolwindow.h \
     dialog/toolboxwindow.h \
-    class/settings.h \
     plugin/pluginsystem.h \
     plugin/iwingtoolplg.h \
     class/settingmanager.h \

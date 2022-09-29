@@ -109,12 +109,12 @@ void ShortCutEditDialog::on_accept() {
     res.provider = sel->provider();
     res.pluginIndex = ps->getSelectedIndex();
   } else {
+    res.process = fcedit->text();
     if (res.process.isEmpty()) {
       DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                                tr("NoProcessSet"));
       return;
     }
-    res.process = fcedit->text();
   }
 
   res.params = dledit->text();

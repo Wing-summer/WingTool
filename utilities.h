@@ -4,7 +4,9 @@
 #include "plugin/iwingtoolplg.h"
 #include <QIcon>
 #include <QKeySequence>
+#include <QMimeDatabase>
 #include <QString>
+#include <QtDBus>
 
 #define ProgramIcon QIcon(":/images/logo.svg")
 #define ICONRES(name) QIcon(":/images/" name ".png")
@@ -28,13 +30,41 @@ struct ToolStructInfo {
 
 Q_DECLARE_METATYPE(ToolStructInfo)
 
+class PluginSystem;
+
 class Utilities {
 public:
+  static bool activeWindowFromDock(quintptr winId) {
+    bool bRet = true;
+    // new interface use application as id
+    QDBusInterface dockDbusInterface("com.deepin.dde.daemon.Dock",
+                                     "/com/deepin/dde/daemon/Dock",
+                                     "com.deepin.dde.daemon.Dock");
+    QDBusReply<void> reply = dockDbusInterface.call("ActivateWindow", winId);
+    if (!reply.isValid()) {
+      qDebug() << "call com.deepin.dde.daemon.Dock failed" << reply.error();
+      bRet = false;
+    }
+    return bRet;
+  }
+
   static QIcon processPluginIcon(IWingToolPlg *plg) {
     if (plg->pluginIcon().isNull()) {
       return ICONRES("plugin");
     }
     return plg->pluginIcon();
+  }
+
+  static QIcon trimIconFromInfo(IWingToolPlg *plg, ToolStructInfo &info) {
+    if (info.isPlugin) {
+      if (plg == nullptr)
+        return QIcon();
+      return plg->pluginIcon();
+    } else {
+      QMimeDatabase db;
+      auto t = db.mimeTypeForFile(info.process);
+      return QIcon::fromTheme(t.iconName(), QIcon(t.iconName()));
+    }
   }
 };
 

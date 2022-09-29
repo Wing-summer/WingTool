@@ -10,6 +10,7 @@
 #include <QButtonGroup>
 #include <QCloseEvent>
 #include <QDesktopServices>
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QMimeDatabase>
@@ -37,7 +38,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   auto scview = new QScrollArea;
   scview->setWidget(w);
   auto vlayout = new QVBoxLayout(w);
-
+  vlayout->setMargin(20);
   auto l = new DLabel(tr("Common"), this);
   auto font = this->font();
   font.setUnderline(true);
@@ -48,18 +49,82 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   vlayout->addWidget(l);
   vlayout->addSpacing(5);
   cbauto = new DCheckBox(tr("AutoStart"), this);
-  vlayout->setMargin(20);
+  connect(cbauto, &DCheckBox::toggled, this, [=](bool v) {
+
+  });
   vlayout->addWidget(cbauto, Qt::AlignTop);
+
+  vlayout->addSpacing(10);
+  l = new DLabel(tr("Shortcut"), this);
+  l->setFont(font);
+  vlayout->addWidget(l);
+  vlayout->addSpacing(5);
+  auto gw = new QWidget(w);
+  vlayout->addWidget(gw);
+  auto flayout = new QFormLayout(gw);
+  kseqTool = new DKeySequenceEdit(gw);
+  connect(kseqTool, &DKeySequenceEdit::editingFinished, this,
+          [=](const QKeySequence &keySequence) {
+
+          });
+  flayout->addRow(tr("ToolBox:"), kseqTool);
+  auto hlayout = new QHBoxLayout(gw);
+  cbMod = new DComboBox(gw);
+  cbMod->addItems({"Ctrl", "Shift", "Alt", "Super"});
+  cbMod->setCurrentIndex(0);
+  hlayout->addWidget(cbMod);
+  cbMouseBtn = new DComboBox(gw);
+  cbMouseBtn->addItems(
+      {tr("Left"), tr("Right"), tr("Middle"), tr("XButton1"), tr("XButton2")});
+  cbMouseBtn->setCurrentIndex(2);
+  hlayout->addWidget(cbMouseBtn);
+  flayout->addRow(tr("ToolWin:"), hlayout);
+
+  vlayout->addSpacing(10);
+  l = new DLabel(tr("Config"), this);
+  l->setFont(font);
+  vlayout->addWidget(l);
+  vlayout->addSpacing(5);
+  auto group = new DButtonBox(this);
+  QList<DButtonBoxButton *> blist;
+  auto b = new DButtonBoxButton(tr("Export"), this);
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+
+  });
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Import"), this);
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+
+  });
+  blist.append(b);
+  b = new DButtonBoxButton(tr("Reset"), this);
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+
+  });
+  blist.append(b);
+  group->setButtonList(blist, false);
+  vlayout->addWidget(group);
+
+  vlayout->addSpacing(10);
+  l = new DLabel(tr("Software"), this);
+  l->setFont(font);
+  vlayout->addWidget(l);
+  vlayout->addSpacing(5);
+
+  vlayout->addWidget(new DLabel(QString(tr("%1 , Ver %2 , by WingSummer."))
+                                    .arg(qApp->applicationName())
+                                    .arg(qApp->applicationVersion())));
+
   vlayout->addStretch();
   tabs->addTab(w, tr("General"));
 
   // Hotkeys
   w = new QWidget(this);
   vlayout = new QVBoxLayout(w);
-  auto group = new DButtonBox(this);
+  group = new DButtonBox(this);
   vlayout->setMargin(20);
-  QList<DButtonBoxButton *> blist;
-  auto b = new DButtonBoxButton(tr("Add"), this);
+  blist.clear(); // 征用
+  b = new DButtonBoxButton(tr("Add"), this);
   connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_addHotkey);
   blist.append(b);
   b = new DButtonBoxButton(tr("Remove"), this);
@@ -137,7 +202,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   auto tvlayout = new QVBoxLayout;
 
   auto gridsize = 40; // 默认 40 先
-  auto gw = new QWidget(w);
+  gw = new QWidget(w);
   gw->setFixedSize(gridsize * 3, gridsize * 3);
   auto mlayout = new QGridLayout(gw);
   mlayout->setMargin(1);
@@ -513,9 +578,42 @@ void CenterWindow::enableSelectedHotkeys(bool enable) {
   }
 }
 
-void CenterWindow::on_editToolWin() {}
+void CenterWindow::on_editToolWin() {
+  auto sels = lstoolwin->selectedItems().count();
+  if (sels != 1) {
+    DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                             tr("PleaseSelectOne"));
+    return;
+  }
+  auto index = lstoolwin->currentRow();
+  ToolEditDialog d(wintoolinfos[index]);
+  if (d.exec()) {
+    auto res = d.getResult();
+    wintoolinfos[index] = res;
+    auto item = lstoolwin->item(index);
+    item->setIcon(
+        Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res));
+    item->setText(res.isPlugin ? res.process
+                               : QFileInfo(res.process).fileName());
+    item->setToolTip(res.process);
+  }
+}
 
-void CenterWindow::on_removeToolWin() {}
+void CenterWindow::on_removeToolWin() {
+  auto sels = lstoolwin->selectionModel()->selectedRows();
+  QVector<int> nums;
+  for (auto &item : sels) {
+    nums.append(item.row());
+  }
+
+  std::sort(nums.begin(), nums.end(), std::greater<int>());
+
+  for (auto index : nums) {
+    wintoolinfos.removeAt(index);
+    auto item = lstoolwin->takeItem(index);
+    delete item;
+  }
+}
 
 void CenterWindow::on_clearToolWin() {
   lstoolwin->clear();
@@ -531,8 +629,19 @@ void CenterWindow::on_addToolWin() {
     auto index = lstoolwin->currentRow();
     if (index < 0) {
       wintoolinfos.append(res);
-
+      auto item = new QListWidgetItem(
+          Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res),
+          res.isPlugin ? res.process : QFileInfo(res.process).fileName());
+      item->setToolTip(res.process);
+      lstoolwin->addItem(item);
     } else {
+      wintoolinfos.insert(index + 1, res);
+
+      auto item = new QListWidgetItem(
+          Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res),
+          res.isPlugin ? res.process : QFileInfo(res.process).fileName());
+      item->setToolTip(res.process);
+      lstoolwin->insertItem(index + 1, item);
     }
   }
 }
