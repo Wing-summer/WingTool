@@ -1,11 +1,11 @@
 #include "appmanager.h"
 #include <QApplication>
 #include <QClipboard>
+#include <QKeySequence>
 
 AppManager *AppManager::m_instance = nullptr;
 
 AppManager::AppManager(QObject *parent) : QObject(parent) {
-
   // 初始化选词监控
   auto clipboard = qApp->clipboard();
   connect(clipboard, &QClipboard::selectionChanged, this, [=] {
@@ -24,8 +24,8 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
   CONNECT(mouseMove);
 
   connect(&monitor, &EventMonitor::buttonPress,
-          [=](EventMonitor::MouseButton btn, int x, int y) {
-            if (btn == EventMonitor::MouseButton::MiddleButton) {
+          [=](Qt::MouseButton btn, int x, int y) {
+            if (this->checkToolShow(btn)) {
               toolwin.popup(QCursor::pos());
             }
             emit this->buttonPress(btn, x, y);
@@ -37,15 +37,13 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
     emit this->mouseDrag(x, y);
   });
   connect(&monitor, &EventMonitor::buttonRelease,
-          [=](EventMonitor::MouseButton btn, int x, int y) {
+          [=](Qt::MouseButton btn, int x, int y) {
             toolwin.hide();
             ignoremsg = true;
             emit this->buttonRelease(btn, x, y);
           });
 
   monitor.start();
-
-  // 初始化热键存储
 
   // 存单实例
   m_instance = this;
@@ -106,4 +104,8 @@ void AppManager::clearHotkey() {
   }
   registeredSeq.clear();
   hotkeys.clear();
+}
+
+Qt::KeyboardModifier AppManager::getKeyModifier() const {
+  return monitor.getKeyModifier();
 }

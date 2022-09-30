@@ -4,8 +4,7 @@
 #include "class/eventmonitor.h"
 #include "class/hotkey.h"
 #include "dialog/toolwindow.h"
-#undef Bool
-#undef Unsorted
+#include "utilities.h"
 #include <QList>
 #include <QObject>
 #include <QString>
@@ -25,9 +24,11 @@ public:
   bool editHotkey(Hotkey *hotkey, QKeySequence &keyseq);
   void clearHotkey();
 
+  Qt::KeyboardModifier getKeyModifier() const;
+
 signals:
-  void buttonPress(EventMonitor::MouseButton btn, int x, int y);
-  void buttonRelease(EventMonitor::MouseButton btn, int x, int y);
+  void buttonPress(Qt::MouseButton btn, int x, int y);
+  void buttonRelease(Qt::MouseButton btn, int x, int y);
   void clicked(int x, int y);
   void doubleClicked(int x, int y);
   void mouseWheel(EventMonitor::MouseWheel direction);
@@ -39,11 +40,11 @@ signals:
   void hotkeyEnableChanged(bool value, const Hotkey *hotkey);
 
   void selectionTextChanged(const QString &selectedText);
+  bool checkToolShow(Qt::MouseButton btn);
 
 private:
   EventMonitor monitor;
   QList<Hotkey *> hotkeys;
-  QStringList execs;
 
   bool ignoremsg = false;
 

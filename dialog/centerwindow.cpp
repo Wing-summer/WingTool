@@ -53,13 +53,26 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   });
   vlayout->addWidget(cbauto, Qt::AlignTop);
+  auto gw = new QWidget(w);
+  vlayout->addWidget(gw);
+  auto hlayout = new QHBoxLayout(gw);
+  hlayout->addWidget(new DLabel(tr("ToolWinGridSize"), this));
+  hlayout->addSpacing(5);
+  sbGridsize = new DSpinBox(w);
+  sbGridsize->setRange(30, 60);
+  sbGridsize->setValue(40); // 默认 40 先
+  connect(sbGridsize, QOverload<int>::of(&DSpinBox::valueChanged), this,
+          [=](int v) {
+
+          });
+  hlayout->addWidget(sbGridsize);
 
   vlayout->addSpacing(10);
   l = new DLabel(tr("Shortcut"), this);
   l->setFont(font);
   vlayout->addWidget(l);
   vlayout->addSpacing(5);
-  auto gw = new QWidget(w);
+  gw = new QWidget(w);
   vlayout->addWidget(gw);
   auto flayout = new QFormLayout(gw);
   kseqTool = new DKeySequenceEdit(gw);
@@ -68,7 +81,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
           });
   flayout->addRow(tr("ToolBox:"), kseqTool);
-  auto hlayout = new QHBoxLayout(gw);
+  hlayout = new QHBoxLayout(gw);
   cbMod = new DComboBox(gw);
   cbMod->addItems({"Ctrl", "Shift", "Alt", "Super"});
   cbMod->setCurrentIndex(0);
@@ -113,7 +126,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   vlayout->addWidget(new DLabel(QString(tr("%1 , Ver %2 , by WingSummer."))
                                     .arg(qApp->applicationName())
-                                    .arg(qApp->applicationVersion())));
+                                    .arg(qApp->applicationVersion()),
+                                this));
 
   vlayout->addStretch();
   tabs->addTab(w, tr("General"));
@@ -650,17 +664,93 @@ void CenterWindow::on_upToolWin() {}
 
 void CenterWindow::on_downToolWin() {}
 
-void CenterWindow::initSettings() {
+void CenterWindow::addHotKeyInfo(ToolStructInfo &info) {
+  // 添加 UI 项目
+  auto index = tbhotkeys->rowCount();
+  tbhotkeys->setRowCount(index + 1);
+  auto wt = new QTableWidgetItem;
+  wt->setCheckState(info.enabled ? Qt::Checked : Qt::Unchecked);
+  tbhotkeys->setItem(index, 0, wt);
+  tbhotkeys->setItem(index, 1, new QTableWidgetItem(info.seq.toString()));
+  wt = new QTableWidgetItem(info.process);
+  wt->setToolTip(info.process);
+  tbhotkeys->setItem(index, 2, wt);
+  wt = new QTableWidgetItem(info.params);
+  wt->setToolTip(info.params);
+  tbhotkeys->setItem(index, 3, wt);
+
+  // 注册热键
+  auto hk = manager->registerHotkey(info.seq, true);
+  hotkeys << hk;
+  scinfos.insert(hk, info);
+
+  // 修正热键状态
+  manager->enableHotKey(hk, info.enabled);
+}
+
+void CenterWindow::setoolWinInfo(int index, ToolStructInfo &info) {
+  if (index >= 4)
+    index++;
+  toolinfos[index] = info;
+
+  // 更新 UI
+  // TODO
+}
+
+void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
+  wintoolinfos << info;
+  auto item = new QListWidgetItem(
+      Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info),
+      info.isPlugin ? info.process : QFileInfo(info.process).fileName());
+  item->setToolTip(info.process);
+  lstoolwin->addItem(item);
+}
+
+void CenterWindow::initGeneralSettings() {
   sm = SettingManager::instance();
   auto gridsize = sm->toolGridSize();
   for (auto i = 0; i < 9; i++) {
     lbls[i]->setFixedSize(QSize(gridsize, gridsize));
   }
-  emit this->getHokeysBuffer(hotkeys, scinfos);
-  emit this->getToolLeftBuffer(toolinfos);
-  emit this->getToolRightBuffer(wintoolinfos);
 
-  // 获取完数据后，开始初始化程序配置
+  Qt::KeyboardModifier mod = sm->toolwinMod();
+  Qt::MouseButton btn = sm->toolwinMouseBtn();
+  switch (mod) {
+  case Qt::KeyboardModifier::AltModifier:
+    cbMod->setCurrentIndex(2);
+    break;
+  case Qt::KeyboardModifier::MetaModifier:
+    cbMod->setCurrentIndex(3);
+    break;
+  case Qt::KeyboardModifier::ShiftModifier:
+    cbMod->setCurrentIndex(1);
+    break;
+  default:
+    cbMod->setCurrentIndex(0);
+    break;
+  }
+
+  switch (btn) {
+  case Qt::MouseButton::RightButton:
+    cbMouseBtn->setCurrentIndex(1);
+    break;
+  case Qt::MouseButton::MidButton:
+    cbMouseBtn->setCurrentIndex(2);
+    break;
+  case Qt::MouseButton::XButton1:
+    cbMouseBtn->setCurrentIndex(3);
+    break;
+  case Qt::MouseButton::XButton2:
+    cbMouseBtn->setCurrentIndex(4);
+    break;
+  default:
+    cbMouseBtn->setCurrentIndex(0);
+    break;
+  }
+
+  auto seq = sm->toolBoxHotkey();
+  kseqTool->setKeySequence(seq);
+  manager->registerHotkey(seq, true);
 }
 
 void CenterWindow::initPluginSys() {
@@ -692,6 +782,60 @@ void CenterWindow::initAppManger() {
                   ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
             }
           });
+}
+
+void CenterWindow::getConfig(QDataStream &f) {
+  // 先保存 Hotkey 的相关信息
+  f << hotkeys.count(); // 先存一下有几个
+  for (auto &p : scinfos) {
+    f << p.enabled << p.isPlugin << p.seq;
+    if (p.isPlugin) {
+      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
+        << plgsys->pluginHash(p.pluginIndex); //最后存储 MD5 表示一条信息结束了
+    } else {
+      f << p.process.toUtf8()
+        << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
+    }
+  }
+
+  // 下面继续存储 ToolWin 相关信息，只有8条
+  for (auto i = 0; i < 9; i++) {
+    if (i == 4) // 抛掉空的
+      continue;
+
+    auto &p = toolinfos[i];
+    // 对于 ToolWin 来说，enabled 是决定性的
+    // 只有这个标志位有效，这个工具才有意义
+    // 只存有意义的即可
+    if (p.enabled) {
+      f << p.isPlugin;
+      if (p.isPlugin) {
+        f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
+          << plgsys->pluginHash(
+                 p.pluginIndex); //最后存储 MD5 表示一条信息结束了
+      } else {
+        f << p.process.toUtf8()
+          << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
+      }
+    }
+  }
+
+  // 下面存取 WinTool 相关信息
+  f << wintoolinfos.count(); // 先存一下有几个
+  for (auto &p : wintoolinfos) {
+    // 对于 WinTool 来说， enabled 就没用了
+    // 只存储相关基础信息就可以了
+    f << p.isPlugin;
+    if (p.isPlugin) {
+      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
+        << plgsys->pluginHash(p.pluginIndex); //最后存储 MD5 表示一条信息结束了
+    } else {
+      f << p.process.toUtf8()
+        << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
+    }
+  }
+
+  // 保存完毕，可以返回了
 }
 
 void CenterWindow::closeEvent(QCloseEvent *event) {

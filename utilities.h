@@ -30,8 +30,6 @@ struct ToolStructInfo {
 
 Q_DECLARE_METATYPE(ToolStructInfo)
 
-class PluginSystem;
-
 class Utilities {
 public:
   static bool activeWindowFromDock(quintptr winId) {
@@ -53,6 +51,54 @@ public:
       return ICONRES("plugin");
     }
     return plg->pluginIcon();
+  }
+
+  // 虽然 provider 是插件的唯一标识，需要进行校验
+  // 但是，检查兼容性的时候第一关就是看看有没有它
+  // 所以：没必要！
+  static QByteArray getPUID(IWingToolPlg *plg) {
+    if (!plg)
+      return QByteArray();
+    // 这个 PUID 似乎不那么高大上，仅仅就是拼凑
+    // 但这几个是影响插件兼容的必要因素
+
+    QByteArray buffer;
+    QBuffer b(&buffer);
+    QDataStream f(&b);
+
+    f << plg->isTool() << plg->pluginServices();
+    return buffer;
+  }
+
+  static bool isPluginCompatible(IWingToolPlg *plg, QByteArray &old) {
+    if (!plg)
+      return false;
+
+    QBuffer b(&old);
+    QDataStream f(&b);
+
+    bool isTool;
+    f >> isTool;
+    if (isTool != plg->isTool()) // 以前你是工具项目之一，后面不是了，肯定不兼容
+      return false;
+
+    QStringList services;
+    f >> services;
+
+    auto srv = plg->pluginServices();
+    auto len = services.count();
+
+    // 服务比原来的都少了，肯定不兼容
+    if (srv.count() < len)
+      return false;
+
+    // 开始评判函数，函数名不一致会导致错误的函数调用
+    for (auto i = 0; i < len; i++) {
+      if (srv[i] != services[i])
+        return false;
+    }
+
+    return true;
   }
 
   static QIcon trimIconFromInfo(IWingToolPlg *plg, ToolStructInfo &info) {

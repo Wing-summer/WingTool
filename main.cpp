@@ -15,6 +15,8 @@
 
 DWIDGET_USE_NAMESPACE
 
+Q_DECLARE_METATYPE(Qt::MouseButton)
+
 int main(int argc, char *argv[]) {
   //解决 root/ubuntu 主题样式走形
   qputenv("XDG_CURRENT_DESKTOP", "Deepin");
@@ -80,18 +82,7 @@ int main(int argc, char *argv[]) {
   /*== 以下在主函数初始化确保单例 ==*/
   /* 之后不得使用构造函数的方式使用 */
 
-  // 初始化软件配置
-  SettingManager sm;
-
-  QObject::connect(&sm, &SettingManager::loadingFinish, &w,
-                   &CenterWindow::initSettings);
-  QObject::connect(&w, &CenterWindow::getHokeysBuffer, &sm,
-                   &SettingManager::getHokeysBuffer);
-  QObject::connect(&w, &CenterWindow::getToolLeftBuffer, &sm,
-                   &SettingManager::getToolLeftBuffer);
-  QObject::connect(&w, &CenterWindow::getToolRightBuffer, &sm,
-                   &SettingManager::getToolRightBuffer);
-  sm.loadSettings();
+  qRegisterMetaType<Qt::MouseButton>();
 
   // 初始化程序基础驱动
   AppManager manager;
@@ -100,6 +91,28 @@ int main(int argc, char *argv[]) {
   // 初始化插件系统
   PluginSystem plgsys;
   w.initPluginSys();
+
+  // 初始化软件配置
+  SettingManager sm;
+
+  QObject::connect(&sm, &SettingManager::loadedGeneral, &w,
+                   &CenterWindow::initGeneralSettings);
+  QObject::connect(&sm, &SettingManager::addHotKeyInfo, &w,
+                   &CenterWindow::addHotKeyInfo);
+  QObject::connect(&sm, &SettingManager::setToolWinInfo, &w,
+                   &CenterWindow::setoolWinInfo);
+  QObject::connect(&sm, &SettingManager::addWinToolInfo, &w,
+                   &CenterWindow::addWinToolInfo);
+  QObject::connect(&sm, &SettingManager::sigSaveConfig, &w,
+                   &CenterWindow::getConfig);
+  sm.loadSettings();
+
+  QObject::connect(&manager, &AppManager::checkToolShow,
+                   [&sm, &manager](Qt::MouseButton btn) {
+                     auto mod = manager.getKeyModifier();
+                     return mod == sm.toolwinMod() &&
+                            sm.toolwinMouseBtn() == btn;
+                   });
 
   /*===========================*/
 

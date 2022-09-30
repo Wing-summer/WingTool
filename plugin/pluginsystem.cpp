@@ -1,4 +1,5 @@
 #include "pluginsystem.h"
+#include "utilities.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QPluginLoader>
@@ -32,15 +33,15 @@ PluginSystem::PluginSystem(QObject *parent)
 
   // 初始化插件基础服务
   connect(manager, &AppManager::buttonPress, this,
-          [=](EventMonitor::MouseButton btn, int x, int y) {
+          [=](Qt::MouseButton btn, int x, int y) {
             for (auto item : dispatcher[HookIndex::ButtonPress]) {
-              item->buttonPress(MouseButtonEvent(btn), x, y);
+              item->buttonPress(btn, x, y);
             }
           });
   connect(manager, &AppManager::buttonRelease, this,
-          [=](EventMonitor::MouseButton btn, int x, int y) {
+          [=](Qt::MouseButton btn, int x, int y) {
             for (auto item : dispatcher[HookIndex::ButtonRelease]) {
-              item->buttonRelease(MouseButtonEvent(btn), x, y);
+              item->buttonRelease(btn, x, y);
             }
           });
   connect(manager, &AppManager::mouseMove, this, [=](int x, int y) {
@@ -216,9 +217,10 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         info.pluginComment = p->pluginComment();
         info.pluginVersion = p->pluginVersion();
 
-        loadedplginfos.push_back(info);
-        m_plgs.push_back(p);
+        loadedplginfos << info;
+        m_plgs << p;
         loadedProvider << p->provider();
+        m_plgsMD5s << Utilities::getPUID(p);
 
         dWarning(tr("PluginInitRegister"));
 
@@ -248,7 +250,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   auto hk = this->manager->registerHotkey(keyseq, false);
                   if (hk) {
                     auto uuid = QUuid::createUuid();
-                    m_plghk[sender].append(uuid);
+                    m_plghk[sender] << uuid;
                     uhmap.insert(uuid, hk);
                     return uuid;
                   } else {
@@ -350,7 +352,7 @@ QList<QKeySequence> PluginSystem::pluginRegisteredHotkey(IWingToolPlg *plg) {
   auto plist = m_plghk[plg];
   for (auto &item : plist) {
     auto hk = uhmap[item];
-    keys.append(hk->shortcut());
+    keys << hk->shortcut();
   }
   return keys;
 }
@@ -366,6 +368,12 @@ bool PluginSystem::pluginCall(QString provider, int serviceID,
 
   m_plgs[i]->pluginServicePipe(serviceID, params);
   return true;
+}
+
+QByteArray PluginSystem::pluginHash(int index) { return m_plgsMD5s[index]; }
+
+int PluginSystem::pluginIndexByProvider(QString provider) {
+  return loadedProvider.indexOf(provider);
 }
 
 IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid, int &index) {

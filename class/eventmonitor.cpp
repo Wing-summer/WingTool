@@ -1,6 +1,5 @@
 #include "eventmonitor.h"
 #include <QApplication>
-#include <X11/Xlibint.h>
 
 EventMonitor::EventMonitor(QObject *parent) : QThread(parent) {
   isPress = false;
@@ -34,7 +33,7 @@ void EventMonitor::run() {
   // Receive ButtonPress, ButtonRelease and MotionNotify
   // events.
   memset(range, 0, sizeof(XRecordRange));
-  range->device_events.first = ButtonPress;
+  range->device_events.first = KeyPress;
   range->device_events.last = MotionNotify;
 
   // And create the XRECORD context.
@@ -66,6 +65,10 @@ void EventMonitor::run() {
   isClicked = false;
 }
 
+Qt::KeyboardModifier EventMonitor::getKeyModifier() const {
+  return keyModifier;
+}
+
 void EventMonitor::callback(XPointer ptr, XRecordInterceptData *data) {
   (reinterpret_cast<EventMonitor *>(ptr))->handleRecordEvent(data);
 }
@@ -78,10 +81,10 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
     case ButtonPress:
       if (handleWheelEvent(event->u.u.detail)) {
         isPress = true;
-        MouseButton btn = MouseButton::NoneButton;
+        Qt::MouseButton btn = Qt::MouseButton::NoButton;
         switch (event->u.u.detail) {
         case Button1: {
-          btn = MouseButton::LeftButton;
+          btn = Qt::MouseButton::LeftButton;
 
           auto clicknow = std::chrono::system_clock::now();
           double diff_ms =
@@ -100,16 +103,16 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
 
         } break;
         case Button2:
-          btn = MouseButton::MiddleButton;
+          btn = Qt::MouseButton::MiddleButton;
           break;
         case Button3:
-          btn = MouseButton::RightButton;
+          btn = Qt::MouseButton::RightButton;
           break;
-        case XButton1:
-          btn = MouseButton::XButton_1;
+        case XButton_1:
+          btn = Qt::MouseButton::XButton1;
           break;
-        case XButton2:
-          btn = MouseButton::XButton_2;
+        case XButton_2:
+          btn = Qt::MouseButton::XButton2;
           break;
         }
 
@@ -130,27 +133,52 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
       if (handleWheelEvent(event->u.u.detail)) {
         isPress = false;
 
-        MouseButton btn = MouseButton::NoneButton;
+        Qt::MouseButton btn = Qt::MouseButton::NoButton;
         switch (event->u.u.detail) {
         case Button1:
-          btn = MouseButton::LeftButton;
+          btn = Qt::MouseButton::LeftButton;
           break;
         case Button2:
-          btn = MouseButton::MiddleButton;
+          btn = Qt::MouseButton::MiddleButton;
           break;
         case Button3:
-          btn = MouseButton::RightButton;
+          btn = Qt::MouseButton::RightButton;
           break;
-        case XButton1:
-          btn = MouseButton::XButton_1;
+        case XButton_1:
+          btn = Qt::MouseButton::XButton1;
           break;
-        case XButton2:
-          btn = MouseButton::XButton_2;
+        case XButton_2:
+          btn = Qt::MouseButton::XButton2;
           break;
         }
         emit buttonRelease(btn, event->u.keyButtonPointer.rootX,
                            event->u.keyButtonPointer.rootY);
       }
+      break;
+    case KeyPress: {
+      auto code = data->data[1];
+      switch (code) {
+      case 50:
+      case 62:
+        keyModifier = Qt::ShiftModifier;
+        break;
+      case 37:
+      case 105:
+        keyModifier = Qt::ControlModifier;
+        break;
+      case 64:
+      case 108:
+        keyModifier = Qt::AltModifier;
+        break;
+      case 133:
+        keyModifier = Qt::MetaModifier;
+        break;
+      default:
+        break;
+      }
+    } break;
+    case KeyRelease:
+      keyModifier = Qt::NoModifier;
       break;
     default:
       break;

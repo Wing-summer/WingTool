@@ -38,16 +38,6 @@ struct WingPluginInfo {
   QString pluginComment;
 };
 
-enum class MouseButtonEvent {
-  NoneButton,
-  LeftButton,
-  RightButton,
-  MiddleButton,
-  XButton_1,
-  XButton_2
-};
-Q_DECLARE_METATYPE(MouseButtonEvent)
-
 enum class MouseWheelEvent { None, Up, Down, Left, Right };
 Q_DECLARE_METATYPE(MouseWheelEvent)
 
@@ -135,14 +125,14 @@ public slots:
   virtual QVariant pluginServicePipe(int serviceID, QList<QVariant> params) = 0;
 
   // 当鼠标任何一个键被按下就会触发该函数，如果想处理重载
-  virtual void buttonPress(MouseButtonEvent btn, int x, int y) {
+  virtual void buttonPress(Qt::MouseButton btn, int x, int y) {
     Q_UNUSED(btn);
     Q_UNUSED(x);
     Q_UNUSED(y);
   }
 
   // 当鼠标任何一个键从被按下的状态释放就会触发该函数，如果想处理重载
-  virtual void buttonRelease(MouseButtonEvent btn, int x, int y) {
+  virtual void buttonRelease(Qt::MouseButton btn, int x, int y) {
     Q_UNUSED(btn);
     Q_UNUSED(x);
     Q_UNUSED(y);

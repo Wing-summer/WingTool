@@ -14,6 +14,8 @@ public:
   ToolWindow(DDialog *parent = nullptr);
 
 public slots:
+  void loadSettings();
+
   void setIcons(QVector<QIcon> icons);
   void setIcon(int index, QIcon icon);
 

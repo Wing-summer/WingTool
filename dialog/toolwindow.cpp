@@ -9,8 +9,7 @@ ToolWindow::ToolWindow(DDialog *parent) : DDialog(parent) {
                  Qt::X11BypassWindowManagerHint);
   setWindowFlag(Qt::FramelessWindowHint);
 
-  auto sm = SettingManager::instance();
-  auto gridsize = sm->toolGridSize();
+  auto gridsize = 40; // 默认 40 先
   gridtotal = gridsize * 3;
   setFixedSize(gridtotal, gridtotal);
   delete layout();
@@ -29,6 +28,10 @@ ToolWindow::ToolWindow(DDialog *parent) : DDialog(parent) {
   }
 
   lbls[4]->setIcon(ICONRES("close"));
+}
+
+void ToolWindow::loadSettings() {
+  auto sm = SettingManager::instance();
 
   // 当设置修改时，响应调整大小
   connect(sm, &SettingManager::sigToolGridSizeChanged, this, [=](int v) {

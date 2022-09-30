@@ -12,6 +12,7 @@
 #include <DListWidget>
 #include <DMainWindow>
 #include <DMenu>
+#include <DSpinBox>
 #include <DTabWidget>
 #include <DTableWidget>
 #include <DTextBrowser>
@@ -57,16 +58,15 @@ private:
   void on_upToolWin();
   void on_downToolWin();
 
-signals:
-  void getHokeysBuffer(QList<Hotkey *> &hotkeysBuf,
-                       QMap<Hotkey *, ToolStructInfo> &buffer);
-  void getToolLeftBuffer(ToolStructInfo buffer[]);
-  void getToolRightBuffer(QList<ToolStructInfo> &buffer);
-
 public slots:
-  void initSettings();
+  void addHotKeyInfo(ToolStructInfo &info);
+  void setoolWinInfo(int index, ToolStructInfo &info);
+  void addWinToolInfo(ToolStructInfo &info);
+
+  void initGeneralSettings();
   void initPluginSys();
   void initAppManger();
+  void getConfig(QDataStream &f);
 
 protected:
   void closeEvent(QCloseEvent *event) override;
@@ -95,6 +95,8 @@ private:
 
   DKeySequenceEdit *kseqTool;
   DComboBox *cbMod, *cbMouseBtn;
+
+  DSpinBox *sbGridsize;
 
 private:
   QMap<Hotkey *, ToolStructInfo> scinfos; // 用于 Hotkeys
