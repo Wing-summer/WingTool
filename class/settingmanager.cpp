@@ -42,7 +42,7 @@ bool SettingManager::loadSettings() {
     stream >> m_toolGridSize >> m_toolBox >> m_toolwinMod >> m_toolMouse;
 
     // 读取结束，提示可以加载基础配置内容了
-    emit this->loadedGeneral();
+    emit loadedGeneral();
 
     // 读取 Hotkey 的相关信息
     int len;
@@ -151,6 +151,9 @@ bool SettingManager::loadSettings() {
         emit addWinToolInfo(buf);
       }
     }
+  } else {
+    // 如果没有，就加载默认配置
+    emit loadedGeneral();
   }
   return true;
 }

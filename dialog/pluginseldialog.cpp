@@ -13,9 +13,15 @@ PluginSelDialog::PluginSelDialog(DDialog *parent) : DDialog(parent) {
   auto layout = new QHBoxLayout(w);
 
   lsplgs = new DListWidget(this);
+  int i = -1;
   for (auto item : PluginSystem::instance()->plugins()) {
-    lsplgs->addItem(new QListWidgetItem(Utilities::processPluginIcon(item),
-                                        item->pluginName()));
+    i++;
+    if (!item->isTool())
+      continue;
+    auto l = new QListWidgetItem(Utilities::processPluginIcon(item),
+                                 item->pluginName());
+    l->setData(Qt::UserRole, i);
+    lsplgs->addItem(l);
   }
   layout->addWidget(lsplgs);
   addSpacing(10);
@@ -54,7 +60,8 @@ PluginSelDialog::PluginSelDialog(DDialog *parent) : DDialog(parent) {
   QList<DButtonBoxButton *> blist;
   auto b = new DButtonBoxButton(tr("Select"), this);
   connect(b, &DButtonBoxButton::clicked, this, [=] {
-    auto sel = lsplgs->currentRow();
+    auto item = lsplgs->currentItem();
+    auto sel = item->data(Qt::UserRole).toInt();
     if (sel < 0) {
       DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                                tr("NoSelection"));

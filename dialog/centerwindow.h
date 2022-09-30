@@ -87,7 +87,7 @@ private:
   DListWidget *lwplgs, *lstoolwin;
   DTextBrowser *tbplginfo, *tbtoolinfo;
 
-  DCheckBox *cbauto; // 开机自启动
+  DCheckBox *cbToolWin, *cbWinTool;
 
   QProcess pstart;
 

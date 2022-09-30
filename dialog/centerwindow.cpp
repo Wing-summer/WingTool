@@ -48,14 +48,23 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   vlayout->addWidget(l);
   vlayout->addSpacing(5);
-  cbauto = new DCheckBox(tr("AutoStart"), this);
-  connect(cbauto, &DCheckBox::toggled, this, [=](bool v) {
-
-  });
-  vlayout->addWidget(cbauto, Qt::AlignTop);
   auto gw = new QWidget(w);
   vlayout->addWidget(gw);
   auto hlayout = new QHBoxLayout(gw);
+  vlayout->addLayout(hlayout);
+  cbToolWin = new DCheckBox(tr("EnabledToolWin"), this);
+  connect(cbToolWin, &DCheckBox::toggled, this, [=](bool v) {
+
+  });
+  hlayout->addWidget(cbToolWin);
+  cbWinTool = new DCheckBox(tr("EnabledWinTool"), this);
+  connect(cbWinTool, &DCheckBox::toggled, this, [=](bool v) {
+
+  });
+  hlayout->addWidget(cbWinTool);
+  gw = new QWidget(w);
+  vlayout->addWidget(gw);
+  hlayout = new QHBoxLayout(gw);
   hlayout->addWidget(new DLabel(tr("ToolWinGridSize"), this));
   hlayout->addSpacing(5);
   sbGridsize = new DSpinBox(w);
@@ -65,7 +74,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
           [=](int v) {
 
           });
-  hlayout->addWidget(sbGridsize);
+  hlayout->addWidget(sbGridsize, 1);
 
   vlayout->addSpacing(10);
   l = new DLabel(tr("Shortcut"), this);
@@ -217,9 +226,10 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   auto gridsize = 40; // 默认 40 先
   gw = new QWidget(w);
-  gw->setFixedSize(gridsize * 3, gridsize * 3);
-  auto mlayout = new QGridLayout(gw);
-  mlayout->setMargin(1);
+  delete gw->layout();
+  auto mlayout = new QGridLayout;
+  gw->setLayout(mlayout);
+  mlayout->setSpacing(1);
   auto btngs = new QButtonGroup(w);
   btngs->setExclusive(true); // 设置按钮选中互斥
 
@@ -750,12 +760,12 @@ void CenterWindow::initGeneralSettings() {
 
   auto seq = sm->toolBoxHotkey();
   kseqTool->setKeySequence(seq);
-  manager->registerHotkey(seq, true);
+  manager->registerHotkey(seq, false);
 }
 
 void CenterWindow::initPluginSys() {
   plgsys = PluginSystem::instance();
-  for (auto item : PluginSystem::instance()->plugins()) {
+  for (auto item : plgsys->plugins()) {
     lwplgs->addItem(new QListWidgetItem(Utilities::processPluginIcon(item),
                                         item->pluginName()));
   }
