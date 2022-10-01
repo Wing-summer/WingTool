@@ -3,6 +3,7 @@
 
 #include "class/eventmonitor.h"
 #include "class/hotkey.h"
+#include "dialog/toolboxwindow.h"
 #include "dialog/toolwindow.h"
 #include "utilities.h"
 #include <QList>

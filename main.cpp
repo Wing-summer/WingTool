@@ -82,8 +82,6 @@ int main(int argc, char *argv[]) {
   /*== 以下在主函数初始化确保单例 ==*/
   /* 之后不得使用构造函数的方式使用 */
 
-  qRegisterMetaType<Qt::MouseButton>();
-
   // 初始化程序基础驱动
   AppManager manager;
   w.initAppManger();
@@ -110,7 +108,7 @@ int main(int argc, char *argv[]) {
   QObject::connect(&manager, &AppManager::checkToolShow,
                    [&sm, &manager](Qt::MouseButton btn) {
                      auto mod = manager.getKeyModifier();
-                     return mod == sm.toolwinMod() &&
+                     return sm.toolwinEnabled() && mod == sm.toolwinMod() &&
                             sm.toolwinMouseBtn() == btn;
                    });
 

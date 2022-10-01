@@ -7,7 +7,8 @@
 SettingManager *SettingManager::m_instance = nullptr;
 
 SettingManager::SettingManager(QObject *parent)
-    : QObject(parent), m_toolGridSize(TOOLGRIDSIZE),
+    : QObject(parent), m_toolwin(true), m_wintool(true),
+      m_toolGridSize(TOOLGRIDSIZE),
       m_toolBox(
           QKeySequence(Qt::KeyboardModifier::ShiftModifier | Qt::Key_Space)),
       m_toolwinMod(Qt::KeyboardModifier::ControlModifier),
@@ -17,12 +18,15 @@ SettingManager::SettingManager(QObject *parent)
 
 SettingManager *SettingManager::instance() { return m_instance; }
 
-bool SettingManager::loadSettings() {
-  QString strConfigPath =
-      QString("%1/%2/%3/config.conf")
-          .arg(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
-          .arg(qApp->organizationName())
-          .arg(qApp->applicationName());
+bool SettingManager::loadSettings(QString filename) {
+
+  QString strConfigPath = filename.isEmpty()
+                              ? QString("%1/%2/%3/config.conf")
+                                    .arg(QStandardPaths::writableLocation(
+                                        QStandardPaths::ConfigLocation))
+                                    .arg(qApp->organizationName())
+                                    .arg(qApp->applicationName())
+                              : filename;
 
   QFile f(strConfigPath);
   QDataStream stream(&f);
@@ -39,7 +43,8 @@ bool SettingManager::loadSettings() {
     auto plgsys = PluginSystem::instance();
 
     // General
-    stream >> m_toolGridSize >> m_toolBox >> m_toolwinMod >> m_toolMouse;
+    stream >> m_toolwin >> m_wintool >> m_toolGridSize >> m_toolBox >>
+        m_toolwinMod >> m_toolMouse;
 
     // 读取结束，提示可以加载基础配置内容了
     emit loadedGeneral();
@@ -175,7 +180,8 @@ bool SettingManager::exportSettings(QString filename) {
     static char header[] = "WINGTOOL";
     stream.writeRawData(header, 8);
     // General
-    stream << m_toolGridSize << m_toolBox << m_toolwinMod << m_toolMouse;
+    stream << m_toolwin << m_wintool << m_toolGridSize << m_toolBox
+           << m_toolwinMod << m_toolMouse;
     // 有些配置直接保存到 CenterWindow 里面了，为了减少内存占用
     emit sigSaveConfig(stream);
     // 至此，保存完毕
@@ -184,6 +190,8 @@ bool SettingManager::exportSettings(QString filename) {
   }
   return false;
 }
+
+void SettingManager::resetSettings() {}
 
 int SettingManager::toolGridSize() const { return m_toolGridSize; }
 
@@ -205,10 +213,26 @@ Qt::KeyboardModifier SettingManager::toolwinMod() const { return m_toolwinMod; }
 
 void SettingManager::setToolwinMod(const Qt::KeyboardModifier &toolwinMod) {
   m_toolwinMod = toolwinMod;
+  emit sigToolwinModChanged(toolwinMod);
 }
 
 Qt::MouseButton SettingManager::toolwinMouseBtn() const { return m_toolMouse; }
 
 void SettingManager::setToolMouseBtn(const Qt::MouseButton &toolMouse) {
   m_toolMouse = toolMouse;
+  emit sigToolwinMouseBtnChanged(toolMouse);
+}
+
+bool SettingManager::toolwinEnabled() const { return m_toolwin; }
+
+void SettingManager::setToolwinEnabled(bool toolwin) {
+  m_toolwin = toolwin;
+  emit sigToolwinEnabledChanged(toolwin);
+}
+
+bool SettingManager::wintoolEnabled() const { return m_wintool; }
+
+void SettingManager::setWintoolEnabled(bool wintool) {
+  m_wintool = wintool;
+  emit sigWintoolEnabledChanged(wintool);
 }

@@ -112,6 +112,10 @@ public:
       return QIcon::fromTheme(t.iconName(), QIcon(t.iconName()));
     }
   }
+
+  static QString getProgramName(ToolStructInfo &info) {
+    return info.isPlugin ? info.process : QFileInfo(info.process).fileName();
+  }
 };
 
 #endif // UTILIES_H

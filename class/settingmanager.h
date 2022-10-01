@@ -16,7 +16,7 @@ public:
   static SettingManager *instance();
 
 public:
-  bool loadSettings();
+  bool loadSettings(QString filename = QString());
   bool saveSettings();
   bool exportSettings(QString filename);
   void resetSettings();
@@ -34,13 +34,20 @@ public:
   Qt::MouseButton toolwinMouseBtn() const;
   void setToolMouseBtn(const Qt::MouseButton &toolwinMouseBtn);
 
+  bool toolwinEnabled() const;
+  void setToolwinEnabled(bool toolwinEnabled);
+
+  bool wintoolEnabled() const;
+  void setWintoolEnabled(bool wintoolEnabled);
+
 signals:
+  void sigToolwinEnabledChanged(bool b);
+  void sigWintoolEnabledChanged(bool b);
   void sigToolGridSizeChanged(int v);
   void loadedGeneral();
   void sigToolBoxHotkeyChanged(const QKeySequence seq);
-  void sigToolWinShortCutChanged(const Qt::KeyboardModifier mod,
-                                 const Qt::MouseButton btn);
-
+  void sigToolwinModChanged(const Qt::KeyboardModifier mod);
+  void sigToolwinMouseBtnChanged(const Qt::MouseButton btn);
   void sigSaveConfig(QDataStream &stream);
 
   // 配置添加信号
@@ -51,6 +58,7 @@ signals:
 private:
   static SettingManager *m_instance;
 
+  bool m_toolwin, m_wintool;
   int m_toolGridSize;
 
   QKeySequence m_toolBox;

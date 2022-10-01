@@ -4,6 +4,7 @@
 #include "class/appmanager.h"
 #include "class/settingmanager.h"
 #include "plugin/pluginsystem.h"
+#include "toolboxwindow.h"
 #include "utilities.h"
 #include <DCheckBox>
 #include <DComboBox>
@@ -58,6 +59,10 @@ private:
   void on_upToolWin();
   void on_downToolWin();
 
+  void on_exportSettings();
+  void on_importSettings();
+  void on_resetSettings();
+
 public slots:
   void addHotKeyInfo(ToolStructInfo &info);
   void setoolWinInfo(int index, ToolStructInfo &info);
@@ -98,6 +103,9 @@ private:
   DComboBox *cbMod, *cbMouseBtn;
 
   DSpinBox *sbGridsize;
+
+  Hotkey *hkwintool;
+  ToolBoxWindow wintool;
 
 private:
   QMap<Hotkey *, ToolStructInfo> scinfos; // 用于 Hotkeys

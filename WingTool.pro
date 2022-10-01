@@ -25,7 +25,9 @@ SOURCES += \
     control/pluginselector.cpp \
     dialog/pluginseldialog.cpp \
     dialog/tooleditdialog.cpp \
-    class/hotkey.cpp
+    class/hotkey.cpp \
+    dialog/toolswapdialog.cpp \
+    control/wintoolitem.cpp
 RESOURCES +=         resources.qrc
 
 HEADERS += \
@@ -45,4 +47,6 @@ HEADERS += \
     dialog/pluginseldialog.h \
     utilities.h \
     dialog/tooleditdialog.h \
-    class/hotkey.h
+    class/hotkey.h \
+    dialog/toolswapdialog.h \
+    control/wintoolitem.h

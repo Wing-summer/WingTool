@@ -1,12 +1,15 @@
 #include "centerwindow.h"
 #include "shortcuteditdialog.h"
 #include "tooleditdialog.h"
+#include "toolswapdialog.h"
 #include <DButtonBox>
+#include <DFileDialog>
 #include <DLabel>
 #include <DMessageBox>
 #include <DMessageManager>
 #include <DTextBrowser>
 #include <DTitlebar>
+#include <DWidgetUtil>
 #include <QButtonGroup>
 #include <QCloseEvent>
 #include <QDesktopServices>
@@ -53,14 +56,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   auto hlayout = new QHBoxLayout(gw);
   vlayout->addLayout(hlayout);
   cbToolWin = new DCheckBox(tr("EnabledToolWin"), this);
-  connect(cbToolWin, &DCheckBox::toggled, this, [=](bool v) {
-
-  });
   hlayout->addWidget(cbToolWin);
   cbWinTool = new DCheckBox(tr("EnabledWinTool"), this);
-  connect(cbWinTool, &DCheckBox::toggled, this, [=](bool v) {
-
-  });
   hlayout->addWidget(cbWinTool);
   gw = new QWidget(w);
   vlayout->addWidget(gw);
@@ -70,10 +67,6 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   sbGridsize = new DSpinBox(w);
   sbGridsize->setRange(30, 60);
   sbGridsize->setValue(40); // 默认 40 先
-  connect(sbGridsize, QOverload<int>::of(&DSpinBox::valueChanged), this,
-          [=](int v) {
-
-          });
   hlayout->addWidget(sbGridsize, 1);
 
   vlayout->addSpacing(10);
@@ -85,10 +78,6 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   vlayout->addWidget(gw);
   auto flayout = new QFormLayout(gw);
   kseqTool = new DKeySequenceEdit(gw);
-  connect(kseqTool, &DKeySequenceEdit::editingFinished, this,
-          [=](const QKeySequence &keySequence) {
-
-          });
   flayout->addRow(tr("ToolBox:"), kseqTool);
   hlayout = new QHBoxLayout(gw);
   cbMod = new DComboBox(gw);
@@ -110,19 +99,16 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   auto group = new DButtonBox(this);
   QList<DButtonBoxButton *> blist;
   auto b = new DButtonBoxButton(tr("Export"), this);
-  connect(b, &DButtonBoxButton::clicked, this, [=] {
-
-  });
+  connect(b, &DButtonBoxButton::clicked, this,
+          [=] { this->on_exportSettings(); });
   blist.append(b);
   b = new DButtonBoxButton(tr("Import"), this);
-  connect(b, &DButtonBoxButton::clicked, this, [=] {
-
-  });
+  connect(b, &DButtonBoxButton::clicked, this,
+          [=] { this->on_importSettings(); });
   blist.append(b);
   b = new DButtonBoxButton(tr("Reset"), this);
-  connect(b, &DButtonBoxButton::clicked, this, [=] {
-
-  });
+  connect(b, &DButtonBoxButton::clicked, this,
+          [=] { this->on_resetSettings(); });
   blist.append(b);
   group->setButtonList(blist, false);
   vlayout->addWidget(group);
@@ -232,7 +218,6 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   mlayout->setSpacing(1);
   auto btngs = new QButtonGroup(w);
   btngs->setExclusive(true); // 设置按钮选中互斥
-
   for (int i = 0; i < 9; i++) {
     auto lbl = new DIconButton(this);
     lbl->setFixedSize(gridsize - 2, gridsize - 2);
@@ -254,7 +239,6 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
             auto e = QMetaEnum::fromType<IWingToolPlg::Catagorys>();
 
             tbtoolinfo->setText(tr("[Plugin]"));
-            tbtoolinfo->append("");
             tbtoolinfo->append(QObject::tr("PluginName:") + plg->pluginName());
             tbtoolinfo->append(tr("Service:") +
                                plg->pluginServices()[info.serviceID]);
@@ -276,7 +260,6 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
         } else {
           if (info.enabled) {
             tbtoolinfo->setText(tr("[File]"));
-            tbtoolinfo->append("");
             tbtoolinfo->append(tr("FileName:") + info.process);
             tbtoolinfo->append(tr("Params:") + info.params);
           } else {
@@ -299,22 +282,51 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   group = new DButtonBox(this);
   blist.clear(); // 重新征用
-  b = new DButtonBoxButton(tr("Edit"), this);
+  b = new DButtonBoxButton(ICONRES2("edit"));
+  b->setParent(this);
+  b->setIconSize(QSize(20, 20));
+  b->setToolTip(tr("Edit"));
   connect(b, &DButtonBoxButton::clicked, this, [=] {
     ToolEditDialog d(toolinfos[sellbl]);
     if (d.exec()) {
       auto res = d.getResult();
-      toolinfos[sellbl] = res;
-      auto icon =
-          Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res);
-      auto ilbl = lbls[sellbl];
-      ilbl->setIcon(icon);
-      manager->setToolIcon(sellbl, icon);
-      emit ilbl->toggled(true);
+      this->setoolWinInfo(sellbl, res);
+      emit lbls[sellbl]->toggled(true);
     }
   });
   blist.append(b);
-  b = new DButtonBoxButton(tr("Delete"), this);
+  b = new DButtonBoxButton(ICONRES2("swap"));
+  b->setParent(this);
+  b->setIconSize(QSize(20, 20));
+  b->setToolTip(tr("Swap"));
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+    QVector<QIcon> icons;
+    for (auto i = 0; i < 9; i++) {
+      icons.append(lbls[i]->icon());
+    }
+
+    ToolSwapDialog d(icons, this->sellbl);
+    auto res = d.exec();
+    if (res >= 0) {
+      auto tmp = toolinfos[sellbl];
+      toolinfos[sellbl] = toolinfos[res];
+      toolinfos[res] = tmp;
+
+      auto icon1 = lbls[sellbl]->icon();
+      auto icon2 = lbls[res]->icon();
+      lbls[sellbl]->setIcon(icon2);
+      lbls[res]->setIcon(icon1);
+
+      manager->setToolIcon(sellbl, icon2);
+      manager->setToolIcon(res, icon1);
+      lbls[res]->setChecked(true);
+    }
+  });
+  blist.append(b);
+  b = new DButtonBoxButton(ICONRES2("del"));
+  b->setParent(this);
+  b->setIconSize(QSize(20, 20));
+  b->setToolTip(tr("Delete"));
   connect(b, &DButtonBoxButton::clicked, this, [=] {
     toolinfos[sellbl].enabled = false;
     auto ilbl = lbls[sellbl];
@@ -637,8 +649,7 @@ void CenterWindow::on_editToolWin() {
     auto item = lstoolwin->item(index);
     item->setIcon(
         Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res));
-    item->setText(res.isPlugin ? res.process
-                               : QFileInfo(res.process).fileName());
+    item->setText(Utilities::getProgramName(res));
     item->setToolTip(res.process);
   }
 }
@@ -675,7 +686,7 @@ void CenterWindow::on_addToolWin() {
       wintoolinfos.append(res);
       auto item = new QListWidgetItem(
           Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res),
-          res.isPlugin ? res.process : QFileInfo(res.process).fileName());
+          Utilities::getProgramName(res));
       item->setToolTip(res.process);
       lstoolwin->addItem(item);
     } else {
@@ -683,7 +694,7 @@ void CenterWindow::on_addToolWin() {
 
       auto item = new QListWidgetItem(
           Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res),
-          res.isPlugin ? res.process : QFileInfo(res.process).fileName());
+          Utilities::getProgramName(res));
       item->setToolTip(res.process);
       lstoolwin->insertItem(index + 1, item);
     }
@@ -693,6 +704,32 @@ void CenterWindow::on_addToolWin() {
 void CenterWindow::on_upToolWin() {}
 
 void CenterWindow::on_downToolWin() {}
+
+void CenterWindow::on_exportSettings() {
+  auto path = DFileDialog::getSaveFileName(this, tr(""), QString(),
+                                           tr("Config (*.wtcfg)"));
+  if (path.isEmpty())
+    return;
+
+  if (sm->exportSettings(path)) {
+    DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                             tr("ExportSuccess"));
+  }
+}
+
+void CenterWindow::on_importSettings() {
+  auto path = DFileDialog::getOpenFileName(this, tr(""), QString(),
+                                           tr("Config (*.wtcfg)"));
+  if (path.isEmpty())
+    return;
+
+  if (sm->loadSettings(path)) {
+    DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                             tr("ImportSuccess"));
+  }
+}
+
+void CenterWindow::on_resetSettings() { sm->resetSettings(); }
 
 void CenterWindow::addHotKeyInfo(ToolStructInfo &info) {
   // 添加 UI 项目
@@ -719,68 +756,149 @@ void CenterWindow::addHotKeyInfo(ToolStructInfo &info) {
 }
 
 void CenterWindow::setoolWinInfo(int index, ToolStructInfo &info) {
-  if (index >= 4)
-    index++;
   toolinfos[index] = info;
-
-  // 更新 UI
-  // TODO
+  auto icon =
+      Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info);
+  auto ilbl = lbls[sellbl];
+  ilbl->setIcon(icon);
+  manager->setToolIcon(sellbl, icon);
 }
 
 void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
   wintoolinfos << info;
   auto item = new QListWidgetItem(
       Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info),
-      info.isPlugin ? info.process : QFileInfo(info.process).fileName());
+      Utilities::getProgramName(info));
   item->setToolTip(info.process);
   lstoolwin->addItem(item);
 }
 
 void CenterWindow::initGeneralSettings() {
   sm = SettingManager::instance();
-  auto gridsize = sm->toolGridSize();
-  for (auto i = 0; i < 9; i++) {
-    lbls[i]->setFixedSize(QSize(gridsize, gridsize));
-  }
 
-  Qt::KeyboardModifier mod = sm->toolwinMod();
-  Qt::MouseButton btn = sm->toolwinMouseBtn();
-  switch (mod) {
-  case Qt::KeyboardModifier::AltModifier:
-    cbMod->setCurrentIndex(2);
-    break;
-  case Qt::KeyboardModifier::MetaModifier:
-    cbMod->setCurrentIndex(3);
-    break;
-  case Qt::KeyboardModifier::ShiftModifier:
-    cbMod->setCurrentIndex(1);
-    break;
-  default:
-    cbMod->setCurrentIndex(0);
-    break;
-  }
+  // 注册有关设置更改相关信号
+  cbWinTool->setChecked(sm->wintoolEnabled());
+  cbToolWin->setChecked(sm->toolwinEnabled());
 
-  switch (btn) {
-  case Qt::MouseButton::RightButton:
-    cbMouseBtn->setCurrentIndex(1);
-    break;
-  case Qt::MouseButton::MidButton:
-    cbMouseBtn->setCurrentIndex(2);
-    break;
-  case Qt::MouseButton::XButton1:
-    cbMouseBtn->setCurrentIndex(3);
-    break;
-  case Qt::MouseButton::XButton2:
-    cbMouseBtn->setCurrentIndex(4);
-    break;
-  default:
-    cbMouseBtn->setCurrentIndex(0);
-    break;
-  }
+  connect(cbToolWin, &DCheckBox::toggled, this,
+          [=](bool v) { sm->setToolwinEnabled(v); });
+  connect(cbWinTool, &DCheckBox::toggled, this, [=](bool v) {
+    sm->setWintoolEnabled(v);
+    hkwintool->setRegistered(v);
+  });
+
+  connect(sm, &SettingManager::sigToolGridSizeChanged, this, [=](int v) {
+    for (auto i = 0; i < 9; i++) {
+      lbls[i]->setFixedSize(QSize(v, v));
+    }
+  });
+  sm->sigToolGridSizeChanged(sm->toolGridSize());
+  connect(sbGridsize, QOverload<int>::of(&DSpinBox::valueChanged), sm,
+          &SettingManager::setToolGridSize);
 
   auto seq = sm->toolBoxHotkey();
   kseqTool->setKeySequence(seq);
-  manager->registerHotkey(seq, false);
+  hkwintool = manager->registerHotkey(seq, false);
+  hkwintool->disconnect(); // 断开所有自带连接,不能让它走默认处理
+  connect(hkwintool, &Hotkey::activated, this, [&] {
+    Dtk::Widget::moveToCenter(&wintool);
+    wintool.show();
+    Utilities::activeWindowFromDock(wintool.winId());
+  });
+  connect(kseqTool, &DKeySequenceEdit::editingFinished, this,
+          [=](const QKeySequence &keySequence) {
+            sm->setToolBoxHotkey(keySequence);
+          });
+  connect(sm, &SettingManager::sigToolBoxHotkeyChanged, this,
+          [=](const QKeySequence seq) { hkwintool->setShortcut(seq, true); });
+
+  connect(sm, &SettingManager::sigToolwinEnabledChanged, this,
+          [=](bool b) { cbToolWin->setChecked(b); });
+  connect(sm, &SettingManager::sigWintoolEnabledChanged, this,
+          [=](bool b) { cbWinTool->setChecked(b); });
+
+  connect(sm, &SettingManager::sigToolwinModChanged, this,
+          [=](const Qt::KeyboardModifier mod) {
+            switch (mod) {
+            case Qt::KeyboardModifier::AltModifier:
+              cbMod->setCurrentIndex(2);
+              break;
+            case Qt::KeyboardModifier::MetaModifier:
+              cbMod->setCurrentIndex(3);
+              break;
+            case Qt::KeyboardModifier::ShiftModifier:
+              cbMod->setCurrentIndex(1);
+              break;
+            default:
+              cbMod->setCurrentIndex(0);
+              break;
+            }
+          });
+  sm->sigToolwinModChanged(sm->toolwinMod());
+
+  connect(sm, &SettingManager::sigToolwinMouseBtnChanged, this,
+          [=](const Qt::MouseButton btn) {
+            switch (btn) {
+            case Qt::MouseButton::RightButton:
+              cbMouseBtn->setCurrentIndex(1);
+              break;
+            case Qt::MouseButton::MidButton:
+              cbMouseBtn->setCurrentIndex(2);
+              break;
+            case Qt::MouseButton::XButton1:
+              cbMouseBtn->setCurrentIndex(3);
+              break;
+            case Qt::MouseButton::XButton2:
+              cbMouseBtn->setCurrentIndex(4);
+              break;
+            default:
+              cbMouseBtn->setCurrentIndex(0);
+              break;
+            }
+          });
+  sm->sigToolwinMouseBtnChanged(sm->toolwinMouseBtn());
+
+  connect(cbMod, QOverload<int>::of(&DComboBox::currentIndexChanged), this,
+          [=](int index) {
+            Qt::KeyboardModifier mod = Qt::KeyboardModifier::NoModifier;
+            switch (index) {
+            case 0:
+              mod = Qt::KeyboardModifier::ControlModifier;
+              break;
+            case 1:
+              mod = Qt::KeyboardModifier::ShiftModifier;
+              break;
+            case 2:
+              mod = Qt::KeyboardModifier::AltModifier;
+              break;
+            case 3:
+              mod = Qt::KeyboardModifier::MetaModifier;
+              break;
+            }
+            sm->setToolwinMod(mod);
+          });
+  connect(cbMouseBtn, QOverload<int>::of(&DComboBox::currentIndexChanged), this,
+          [=](int index) {
+            Qt::MouseButton btn = Qt::MouseButton::NoButton;
+            switch (index) {
+            case 0:
+              btn = Qt::MouseButton::LeftButton;
+              break;
+            case 1:
+              btn = Qt::MouseButton::RightButton;
+              break;
+            case 2:
+              btn = Qt::MouseButton::MidButton;
+              break;
+            case 3:
+              btn = Qt::MouseButton::XButton1;
+              break;
+            case 4:
+              btn = Qt::MouseButton::XButton2;
+              break;
+            }
+            sm->setToolMouseBtn(btn);
+          });
 }
 
 void CenterWindow::initPluginSys() {
@@ -802,9 +920,7 @@ void CenterWindow::initAppManger() {
               this->runTask(task);
             }
           });
-  connect(manager, &AppManager::hotkeyReleased, this, [=](const Hotkey *) {
-
-  });
+  connect(manager, &AppManager::hotkeyReleased, this, [=](const Hotkey *) {});
   connect(manager, &AppManager::hotkeyEnableChanged, this,
           [=](bool value, const Hotkey *hotkey) {
             if (hotkey->isHostHotkey()) {
