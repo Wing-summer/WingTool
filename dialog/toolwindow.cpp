@@ -55,11 +55,9 @@ void ToolWindow::setIcons(QVector<QIcon> icons) {
 }
 
 void ToolWindow::setIcon(int index, QIcon icon) {
-  // index 取值 0-8 ，但是索引 4 被保留不做处理，是正中间的按钮，需要进行处理
+  // index 取值 0-8 ，但是索引 4 被保留不做处理，是正中间的按钮
   if (index < 0 || index >= 8)
     return;
-  if (index >= 4)
-    index++;
   lbls[index]->setIcon(icon);
 }
 
@@ -83,7 +81,7 @@ void ToolWindow::sendMousePosUpdated() {
 
 void ToolWindow::finished() {
   auto res = m_sel.x() * 3 + m_sel.y();
-  if (res >= 4)
-    res--;
-  emit triggered(res);
+  if (res != 4)
+    emit triggered(res);
+  hide();
 }

@@ -11,6 +11,7 @@ ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
 
   setWindowTitle(tr("ToolWinEdit"));
 
+  res.enabled = true;
   addContent(new DLabel(tr("Plugin"), this));
   addSpacing(5);
   ps = new PluginSelector(this);

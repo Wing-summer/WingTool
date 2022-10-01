@@ -245,6 +245,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     connect(lbl, &DIconButton::toggled, this, [=](bool v) {
       if (v) {
         auto info = toolinfos[i];
+        sellbl = i;
         if (info.isPlugin) {
           // 这里的含义是是否为 null
           if (info.enabled) {
@@ -299,10 +300,28 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   group = new DButtonBox(this);
   blist.clear(); // 重新征用
   b = new DButtonBoxButton(tr("Edit"), this);
-  connect(b, &DButtonBoxButton::clicked, this, [=] {});
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+    ToolEditDialog d(toolinfos[sellbl]);
+    if (d.exec()) {
+      auto res = d.getResult();
+      toolinfos[sellbl] = res;
+      auto icon =
+          Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res);
+      auto ilbl = lbls[sellbl];
+      ilbl->setIcon(icon);
+      manager->setToolIcon(sellbl, icon);
+      emit ilbl->toggled(true);
+    }
+  });
   blist.append(b);
   b = new DButtonBoxButton(tr("Delete"), this);
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_removeHotkey);
+  connect(b, &DButtonBoxButton::clicked, this, [=] {
+    toolinfos[sellbl].enabled = false;
+    auto ilbl = lbls[sellbl];
+    ilbl->setIcon(QIcon());
+    manager->setToolIcon(sellbl, QIcon());
+    emit ilbl->toggled(true);
+  });
   blist.append(b);
   group->setButtonList(blist, false);
   tvlayout->addWidget(group);
@@ -476,7 +495,8 @@ QStringList CenterWindow::parseCmdParams(QString str) {
 }
 
 bool CenterWindow::runTask(ToolStructInfo record) {
-
+  if (!record.enabled)
+    return true;
   if (record.isPlugin) {
     auto params = parseCmdParams(record.params);
     QList<QVariant> ps;
@@ -792,6 +812,8 @@ void CenterWindow::initAppManger() {
                   ->setCheckState(value ? Qt::Checked : Qt::Unchecked);
             }
           });
+  connect(manager, &AppManager::toolSelTriggered, this,
+          [=](int index) { this->runTask(toolinfos[index]); });
 }
 
 void CenterWindow::getConfig(QDataStream &f) {

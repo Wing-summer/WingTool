@@ -38,12 +38,16 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
   });
   connect(&monitor, &EventMonitor::buttonRelease,
           [=](Qt::MouseButton btn, int x, int y) {
-            toolwin.hide();
+            if (toolwin.isVisible())
+              toolwin.finished();
             ignoremsg = true;
             emit this->buttonRelease(btn, x, y);
           });
 
   monitor.start();
+
+  connect(&toolwin, &ToolWindow::triggered, this,
+          &AppManager::toolSelTriggered);
 
   // 存单实例
   m_instance = this;
@@ -108,4 +112,10 @@ void AppManager::clearHotkey() {
 
 Qt::KeyboardModifier AppManager::getKeyModifier() const {
   return monitor.getKeyModifier();
+}
+
+void AppManager::setToolIcons(QVector<QIcon> icons) { toolwin.setIcons(icons); }
+
+void AppManager::setToolIcon(int index, QIcon icon) {
+  toolwin.setIcon(index, icon);
 }

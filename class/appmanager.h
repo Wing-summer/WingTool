@@ -42,6 +42,12 @@ signals:
   void selectionTextChanged(const QString &selectedText);
   bool checkToolShow(Qt::MouseButton btn);
 
+  void toolSelTriggered(int index);
+
+public slots:
+  void setToolIcons(QVector<QIcon> icons);
+  void setToolIcon(int index, QIcon icon);
+
 private:
   EventMonitor monitor;
   QList<Hotkey *> hotkeys;

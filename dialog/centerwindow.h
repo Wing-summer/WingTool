@@ -92,6 +92,7 @@ private:
   QProcess pstart;
 
   DIconButton *lbls[9] = {nullptr};
+  int sellbl = 0;
 
   DKeySequenceEdit *kseqTool;
   DComboBox *cbMod, *cbMouseBtn;

@@ -30,8 +30,6 @@ public slots:
 
 signals:
   // 当选中有效任务时会触发
-  // 注：当 index >= 4 时，会自动减1，即为实际任务索引
-  // 也就是说，收到信号无需转化
   void triggered(int index);
 
 private:
