@@ -66,7 +66,9 @@ public:
     QBuffer b(&buffer);
     QDataStream f(&b);
 
+    b.open(QBuffer::WriteOnly);
     f << plg->isTool() << plg->pluginServices();
+    b.close();
     return buffer;
   }
 
@@ -76,11 +78,15 @@ public:
 
     QBuffer b(&old);
     QDataStream f(&b);
-
+    b.open(QBuffer::ReadOnly);
     bool isTool;
     f >> isTool;
-    if (isTool != plg->isTool()) // 以前你是工具项目之一，后面不是了，肯定不兼容
+
+    // 以前你是工具项目之一，后面不是了，肯定不兼容
+    if (isTool != plg->isTool()) {
+      b.close();
       return false;
+    }
 
     QStringList services;
     f >> services;
@@ -89,15 +95,19 @@ public:
     auto len = services.count();
 
     // 服务比原来的都少了，肯定不兼容
-    if (srv.count() < len)
+    if (srv.count() < len) {
+      b.close();
       return false;
+    }
 
     // 开始评判函数，函数名不一致会导致错误的函数调用
     for (auto i = 0; i < len; i++) {
-      if (srv[i] != services[i])
+      if (srv[i] != services[i]) {
+        b.close();
         return false;
+      }
     }
-
+    b.close();
     return true;
   }
 

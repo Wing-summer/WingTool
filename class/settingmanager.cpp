@@ -20,6 +20,12 @@ SettingManager *SettingManager::instance() { return m_instance; }
 
 bool SettingManager::loadSettings(QString filename) {
 
+#define CORRECTINFO(info)                                                      \
+  info.pluginIndex = plgsys->pluginIndexByProvider(info.provider);             \
+  if (info.isPlugin) {                                                         \
+    info.process = plgsys->plugin(info.pluginIndex)->pluginName();             \
+  }
+
   QString strConfigPath = filename.isEmpty()
                               ? QString("%1/%2/%3/config.conf")
                                     .arg(QStandardPaths::writableLocation(
@@ -73,7 +79,7 @@ bool SettingManager::loadSettings(QString filename) {
           continue;
         }
         // 经历过重重检验，合格入库
-
+        CORRECTINFO(buf);
         emit addHotKeyInfo(buf);
       } else {
         // 如果是打开文件就没这么多事情了
@@ -86,13 +92,16 @@ bool SettingManager::loadSettings(QString filename) {
       }
     }
 
-    // 下面继续读取 ToolWin 相关信息，只有8条
-    for (auto i = 0; i < 8; i++) {
-      ToolStructInfo buf{true};
+    // 下面继续读取 ToolWin 相关信息
+    for (auto i = 0; i < 9; i++) {
+      ToolStructInfo buf;
 
       // 对于 ToolWin 来说，这个成员是决定性的
       // 只有这个标志位有效，这个工具才有意义
 
+      stream >> buf.enabled;
+      if (!buf.enabled)
+        continue;
       stream >> buf.isPlugin;
       if (buf.isPlugin) {
         stream >> buf.serviceID;
@@ -110,6 +119,7 @@ bool SettingManager::loadSettings(QString filename) {
           continue;
         }
         // 经历过重重检验，合格入库
+        CORRECTINFO(buf);
         emit setToolWinInfo(i, buf);
       } else { // 如果是打开文件就没这么多事情了
         QByteArray arr;
@@ -122,7 +132,6 @@ bool SettingManager::loadSettings(QString filename) {
     }
 
     // 下面读取 WinTool 相关信息
-
     stream >> len; // 先读一下有几个
     for (auto i = 0; i < len; i++) {
       ToolStructInfo buf;
@@ -137,6 +146,7 @@ bool SettingManager::loadSettings(QString filename) {
         buf.provider = QString::fromUtf8(arr);
         stream >> arr;
         buf.params = QString::fromUtf8(arr);
+        stream >> arr;
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
         if (pi < 0)
@@ -145,7 +155,9 @@ bool SettingManager::loadSettings(QString filename) {
         if (!Utilities::isPluginCompatible(plgsys->plugin(pi), arr)) {
           continue;
         }
+
         // 经历过重重检验，合格入库
+        CORRECTINFO(buf);
         emit addWinToolInfo(buf);
       } else {
         QByteArray arr;
@@ -160,6 +172,7 @@ bool SettingManager::loadSettings(QString filename) {
     // 如果没有，就加载默认配置
     emit loadedGeneral();
   }
+  f.close();
   return true;
 }
 

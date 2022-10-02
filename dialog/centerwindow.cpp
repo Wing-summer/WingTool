@@ -106,6 +106,9 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   connect(b, &DButtonBoxButton::clicked, this,
           [=] { this->on_importSettings(); });
   blist.append(b);
+  b = new DButtonBoxButton(tr("Save"), this);
+  connect(b, &DButtonBoxButton::clicked, this, [=] { sm->saveSettings(); });
+  blist.append(b);
   b = new DButtonBoxButton(tr("Reset"), this);
   connect(b, &DButtonBoxButton::clicked, this,
           [=] { this->on_resetSettings(); });
@@ -895,18 +898,19 @@ void CenterWindow::setoolWinInfo(int index, ToolStructInfo &info) {
   toolinfos[index] = info;
   auto icon =
       Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info);
-  auto ilbl = lbls[sellbl];
+  auto ilbl = lbls[index];
   ilbl->setIcon(icon);
-  manager->setToolIcon(sellbl, icon);
+  manager->setToolIcon(index, icon);
 }
 
 void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
-  wintoolinfos << info;
+  wintoolinfos.append(info);
   auto item = new QListWidgetItem(
       Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info),
       Utilities::getProgramName(info));
   item->setToolTip(info.process);
   lstoolwin->addItem(item);
+  wintool.addItem(info);
 }
 
 void CenterWindow::initGeneralSettings() {
@@ -1086,15 +1090,13 @@ void CenterWindow::getConfig(QDataStream &f) {
     }
   }
 
-  // 下面继续存储 ToolWin 相关信息，只有8条
+  // 下面继续存储 ToolWin 相关信息
   for (auto i = 0; i < 9; i++) {
-    if (i == 4) // 抛掉空的
-      continue;
-
     auto &p = toolinfos[i];
     // 对于 ToolWin 来说，enabled 是决定性的
     // 只有这个标志位有效，这个工具才有意义
     // 只存有意义的即可
+    f << p.enabled;
     if (p.enabled) {
       f << p.isPlugin;
       if (p.isPlugin) {
