@@ -33,6 +33,7 @@ public:
 
 public slots:
   QVariant pluginServicePipe(int serviceID, QList<QVariant> params) override;
+  virtual void onSetting() override;
 
 private:
   QUuid testhotkey;

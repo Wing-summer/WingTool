@@ -61,12 +61,12 @@ PluginSelDialog::PluginSelDialog(DDialog *parent) : DDialog(parent) {
   auto b = new DButtonBoxButton(tr("Select"), this);
   connect(b, &DButtonBoxButton::clicked, this, [=] {
     auto item = lsplgs->currentItem();
-    auto sel = item->data(Qt::UserRole).toInt();
-    if (sel < 0) {
+    if (!item) {
       DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                                tr("NoSelection"));
       return;
     }
+    auto sel = item->data(Qt::UserRole).toInt();
     this->done(sel);
   });
   blist.append(b);

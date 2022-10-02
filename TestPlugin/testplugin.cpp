@@ -1,4 +1,5 @@
 #include "testplugin.h"
+#include <QMessageBox>
 
 TestPlugin::TestPlugin(QObject *parent) { Q_UNUSED(parent) }
 
@@ -91,6 +92,10 @@ QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
     break;
   }
   return QVariant();
+}
+
+void TestPlugin::onSetting() {
+  QMessageBox::information(nullptr, "Settings", "You Clicked Settings!");
 }
 
 #if QT_VERSION < 0x050000

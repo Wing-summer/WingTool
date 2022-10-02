@@ -181,7 +181,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   tbhotkeys->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(tbhotkeys, &DTabWidget::customContextMenuRequested, this, [=] {
-    auto flag = tbhotkeys->currentRow() >= 0;
+    auto flag = tbhotkeys->selectedItems().count() > 0;
     for (auto item : hkcmenu) {
       item->setEnabled(flag);
     }
@@ -349,61 +349,122 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   b->setIconSize(QSize(20, 20));
   b->setParent(this);
   b->setToolTip(tr("Add"));
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_addToolWin);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_addWinTool);
   blist.append(b);
   b = new DButtonBoxButton(ICONRES2("del"));
   b->setIconSize(QSize(20, 20));
   b->setParent(this);
   b->setToolTip(tr("Remove"));
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_removeToolWin);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_removeWinTool);
   blist.append(b);
   b = new DButtonBoxButton(ICONRES2("edit"));
   b->setIconSize(QSize(20, 20));
   b->setParent(this);
   b->setToolTip(tr("Edit"));
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_editToolWin);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_editWinTool);
   blist.append(b);
   b = new DButtonBoxButton(ICONRES2("up"));
   b->setIconSize(QSize(20, 20));
   b->setParent(this);
   b->setToolTip(tr("Up"));
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_upToolWin);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_upWinTool);
   blist.append(b);
   b = new DButtonBoxButton(ICONRES2("down"));
   b->setIconSize(QSize(20, 20));
   b->setParent(this);
   b->setToolTip(tr("Down"));
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_downToolWin);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_downWinTool);
   blist.append(b);
   b = new DButtonBoxButton(ICONRES2("clear"));
   b->setIconSize(QSize(20, 20));
   b->setParent(this);
   b->setToolTip(tr("Clear"));
-  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_clearToolWin);
+  connect(b, &DButtonBoxButton::clicked, this, &CenterWindow::on_clearWinTool);
   blist.append(b);
   group->setButtonList(blist, false);
   tvlayout->addWidget(group);
 
   lstoolwin = new DListWidget(w);
   menu = new DMenu(lstoolwin);
-  AddMenuAction(tr("Add"), &CenterWindow::on_addToolWin);
-  AddMenuAction(tr("Edit"), &CenterWindow::on_editToolWin);
-  AddMenuAction(tr("Remove"), &CenterWindow::on_removeToolWin);
-  AddMenuAction(tr("Clear"), &CenterWindow::on_clearToolWin);
+  AddMenuAction(tr("Add"), &CenterWindow::on_addWinTool);
+  AddMenuAction(tr("Edit"), &CenterWindow::on_editWinTool);
+  lscmenu.append(a);
+  AddMenuAction(tr("Remove"), &CenterWindow::on_removeWinTool);
+  lscmenu.append(a);
+  AddMenuAction(tr("Clear"), &CenterWindow::on_clearWinTool);
   menu->addSeparator();
-  AddMenuAction(tr("Up"), &CenterWindow::on_upToolWin);
-  AddMenuAction(tr("Down"), &CenterWindow::on_downToolWin);
+  AddMenuAction(tr("Up"), &CenterWindow::on_upWinTool);
+  lscmenu.append(a);
+  AddMenuAction(tr("Down"), &CenterWindow::on_downWinTool);
+  lscmenu.append(a);
   AddMenuAction(tr("TopMost"), [=] {
+    auto sels = lstoolwin->selectionModel()->selectedRows();
+    QVector<int> nums;
+    for (auto &item : sels) {
+      nums.append(item.row());
+    }
 
+    std::sort(nums.begin(), nums.end());
+
+    // 过滤掉不需移动的选项
+    int i = 0;
+    auto len = nums.count();
+    for (; i < len; i++) {
+      if (nums[i] != i)
+        break;
+    }
+
+    // 下面就开始乾坤大挪移
+    for (auto p = nums.rbegin(); p != nums.rend() - i; p++) {
+      auto pi = *p;
+      wintoolinfos.move(pi, i);
+      auto item = lstoolwin->takeItem(pi);
+      lstoolwin->insertItem(i, item);
+      wintool.mvItem(pi, i);
+    }
   });
+  lscmenu.append(a);
   AddMenuAction(tr("DownMost"), [=] {
+    auto sels = lstoolwin->selectionModel()->selectedRows();
+    QVector<int> nums;
+    for (auto &item : sels) {
+      nums.append(item.row());
+    }
 
+    std::sort(nums.begin(), nums.end(), std::greater<int>());
+
+    // 过滤掉不需移动的选项
+    int i = 0;
+    auto len = nums.count();
+    if (nums.first() == lstoolwin->count() - 1) {
+      int pi = nums.first();
+      for (; i < len; i++) {
+        pi--;
+        if (nums[i] != pi)
+          break;
+      }
+    }
+
+    // 下面就开始乾坤大挪移
+    for (auto p = nums.rbegin(); p != nums.rend() - i; p++) {
+      auto pi = *p;
+      wintoolinfos.move(pi, i);
+      auto item = lstoolwin->takeItem(pi);
+      lstoolwin->insertItem(i, item);
+      wintool.mvItem(pi, i);
+    }
   });
+  lscmenu.append(a);
   lstoolwin->setContextMenuPolicy(Qt::CustomContextMenu);
   lstoolwin->setSelectionMode(QListWidget::SelectionMode::ExtendedSelection);
   lstoolwin->setDragDropMode(QListWidget::DragDropMode::NoDragDrop);
-  connect(lstoolwin, &DListWidget::customContextMenuRequested, this,
-          [=] { menu->popup(QCursor::pos()); });
+  connect(lstoolwin, &DListWidget::customContextMenuRequested, this, [=] {
+    auto flag = lstoolwin->selectedItems().count() > 0;
+    for (auto item : lscmenu) {
+      item->setEnabled(flag);
+    }
+    menu->popup(QCursor::pos());
+  });
   tvlayout->addWidget(lstoolwin);
 
   tlayout->addLayout(tvlayout);
@@ -412,15 +473,32 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   // Plugins
   w = new QWidget(this);
   auto playout = new QHBoxLayout(w);
+  auto pvlayout = new QVBoxLayout;
   lwplgs = new DListWidget(w);
   playout->addWidget(lwplgs);
+  playout->addLayout(pvlayout);
 
   tbplginfo = new DTextBrowser(w);
   tbplginfo->setUndoRedoEnabled(false);
   tbplginfo->setText(tr("No selected plugin."));
 
+  pvlayout->addWidget(tbplginfo, 1);
+  auto btnplgset = new DPushButton(tr("Setting"), w);
+  connect(btnplgset, &DPushButton::clicked, this, [=] {
+    auto plg = plgsys->plugin(lwplgs->currentRow());
+    plg->onSetting();
+  });
+  btnplgset->setEnabled(false);
+  pvlayout->addWidget(btnplgset);
+
   connect(lwplgs, &DListWidget::itemSelectionChanged, this, [=] {
+    if (lwplgs->currentRow() < 0) {
+      tbplginfo->setText(tr("No selected plugin."));
+      btnplgset->setEnabled(false);
+      return;
+    }
     tbplginfo->clear();
+    btnplgset->setEnabled(true);
     auto plg = plgsys->plugin(lwplgs->currentRow());
     tbplginfo->append(tr("Name:") + plg->pluginName());
 
@@ -445,7 +523,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
       tbplginfo->append(QString("\t%1").arg(item.toString()));
     }
   });
-  playout->addWidget(tbplginfo);
+
   tabs->addTab(w, tr("Plugins"));
 
   // AboutAuthor
@@ -634,7 +712,7 @@ void CenterWindow::enableSelectedHotkeys(bool enable) {
   }
 }
 
-void CenterWindow::on_editToolWin() {
+void CenterWindow::on_editWinTool() {
   auto sels = lstoolwin->selectedItems().count();
   if (sels != 1) {
     DMessageManager::instance()->sendMessage(this, ProgramIcon,
@@ -654,7 +732,7 @@ void CenterWindow::on_editToolWin() {
   }
 }
 
-void CenterWindow::on_removeToolWin() {
+void CenterWindow::on_removeWinTool() {
   auto sels = lstoolwin->selectionModel()->selectedRows();
   QVector<int> nums;
   for (auto &item : sels) {
@@ -667,17 +745,19 @@ void CenterWindow::on_removeToolWin() {
     wintoolinfos.removeAt(index);
     auto item = lstoolwin->takeItem(index);
     delete item;
+    wintool.rmItem(index);
   }
 }
 
-void CenterWindow::on_clearToolWin() {
+void CenterWindow::on_clearWinTool() {
   lstoolwin->clear();
   wintoolinfos.clear();
+  wintool.rmItem(-1); // 清空数据
   DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                            tr("ClearSuccess"));
 }
 
-void CenterWindow::on_addToolWin() {
+void CenterWindow::on_addWinTool() {
   ToolEditDialog d;
   if (d.exec()) {
     auto res = d.getResult();
@@ -689,6 +769,7 @@ void CenterWindow::on_addToolWin() {
           Utilities::getProgramName(res));
       item->setToolTip(res.process);
       lstoolwin->addItem(item);
+      wintool.addItem(res);
     } else {
       wintoolinfos.insert(index + 1, res);
 
@@ -697,13 +778,68 @@ void CenterWindow::on_addToolWin() {
           Utilities::getProgramName(res));
       item->setToolTip(res.process);
       lstoolwin->insertItem(index + 1, item);
+      wintool.addItem(res, index + 1);
     }
   }
 }
 
-void CenterWindow::on_upToolWin() {}
+void CenterWindow::on_upWinTool() {
+  auto sels = lstoolwin->selectionModel()->selectedRows();
+  QVector<int> nums;
+  for (auto &item : sels) {
+    nums.append(item.row());
+  }
 
-void CenterWindow::on_downToolWin() {}
+  std::sort(nums.begin(), nums.end());
+
+  // 过滤掉不需移动的选项
+  int i = 0;
+  auto len = nums.count();
+  for (; i < len; i++) {
+    if (nums[i] != i)
+      break;
+  }
+
+  // 下面就开始乾坤大挪移
+  for (; i < len; i++) {
+    auto p = nums[i];
+    wintoolinfos.move(p, p - 1);
+    auto item = lstoolwin->takeItem(p);
+    lstoolwin->insertItem(p - 1, item);
+    wintool.mvItem(p, p - 1);
+  }
+}
+
+void CenterWindow::on_downWinTool() {
+  auto sels = lstoolwin->selectionModel()->selectedRows();
+  QVector<int> nums;
+  for (auto &item : sels) {
+    nums.append(item.row());
+  }
+
+  std::sort(nums.begin(), nums.end(), std::greater<int>());
+
+  // 过滤掉不需移动的选项
+  int i = 0;
+  auto len = nums.count();
+  if (nums.first() == lstoolwin->count() - 1) {
+    int pi = nums.first();
+    for (; i < len; i++) {
+      pi--;
+      if (nums[i] != pi)
+        break;
+    }
+  }
+
+  // 下面就开始乾坤大挪移
+  for (; i < len; i++) {
+    auto p = nums[i];
+    wintoolinfos.move(p, p + 1);
+    auto item = lstoolwin->takeItem(p);
+    lstoolwin->insertItem(p + 1, item);
+    wintool.mvItem(p, p + 1);
+  }
+}
 
 void CenterWindow::on_exportSettings() {
   auto path = DFileDialog::getSaveFileName(this, tr(""), QString(),
@@ -796,6 +932,10 @@ void CenterWindow::initGeneralSettings() {
   connect(sbGridsize, QOverload<int>::of(&DSpinBox::valueChanged), sm,
           &SettingManager::setToolGridSize);
 
+  // WinTool 相关
+  wintool.setModal(true);
+  connect(&wintool, &ToolBoxWindow::sigRun, this,
+          [=](int index) { this->runTask(wintoolinfos[index]); });
   auto seq = sm->toolBoxHotkey();
   kseqTool->setKeySequence(seq);
   hkwintool = manager->registerHotkey(seq, false);

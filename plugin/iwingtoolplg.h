@@ -124,6 +124,9 @@ public slots:
   // 宿主开始回调函数时候使用，第一个参数是函数服务索引，第二个是参数集合
   virtual QVariant pluginServicePipe(int serviceID, QList<QVariant> params) = 0;
 
+  // 当插件窗口选中该插件点击设置按钮时触发，以供插件调用自身设置对话框
+  virtual void onSetting() {}
+
   // 当鼠标任何一个键被按下就会触发该函数，如果想处理重载
   virtual void buttonPress(Qt::MouseButton btn, int x, int y) {
     Q_UNUSED(btn);

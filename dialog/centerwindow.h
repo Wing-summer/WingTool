@@ -52,12 +52,12 @@ private:
   void on_addHotkey();
   void enableSelectedHotkeys(bool enable);
 
-  void on_editToolWin();
-  void on_removeToolWin();
-  void on_clearToolWin();
-  void on_addToolWin();
-  void on_upToolWin();
-  void on_downToolWin();
+  void on_editWinTool();
+  void on_removeWinTool();
+  void on_clearWinTool();
+  void on_addWinTool();
+  void on_upWinTool();
+  void on_downWinTool();
 
   void on_exportSettings();
   void on_importSettings();
@@ -77,7 +77,7 @@ protected:
   void closeEvent(QCloseEvent *event) override;
 
 private:
-  QList<QAction *> hkcmenu;
+  QList<QAction *> hkcmenu, lscmenu;
 
 private:
   AppManager *manager;
