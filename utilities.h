@@ -123,8 +123,23 @@ public:
     }
   }
 
-  static QString getProgramName(ToolStructInfo &info) {
-    return info.isPlugin ? info.process : QFileInfo(info.process).fileName();
+  static QString getProgramName(IWingToolPlg *plg, ToolStructInfo &info) {
+    return info.isPlugin
+               ? info.process + " | " + plg->pluginServices()[info.serviceID]
+               : QFileInfo(info.process).fileName();
+  }
+
+  static QString getToolTipContent(IWingToolPlg *plg, ToolStructInfo &info) {
+    if (info.isPlugin) {
+      return QObject::tr("Process:%1\nService:%2\nParams:%3")
+          .arg(info.process)
+          .arg(plg->pluginServices()[info.serviceID])
+          .arg(info.params);
+    } else {
+      return QObject::tr("Process:%1\nParams:%2")
+          .arg(info.process)
+          .arg(info.params);
+    }
   }
 };
 

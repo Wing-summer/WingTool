@@ -44,7 +44,10 @@ void ToolBoxWindow::addItem(ToolStructInfo &info, int index) {
   auto plgsys = PluginSystem::instance();
   auto plg = plgsys->plugin(info.pluginIndex);
   auto icon = Utilities::trimIconFromInfo(plg, info);
-  QString content = tr("Process:") + Utilities::getProgramName(info) + '\n';
+  QString content =
+      tr("Process:") +
+      (info.isPlugin ? info.process : QFileInfo(info.process).fileName()) +
+      '\n';
 
   if (info.isPlugin)
     content += (tr("Service:") + plg->pluginServices()[info.serviceID]);

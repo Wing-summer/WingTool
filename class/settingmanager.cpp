@@ -12,7 +12,17 @@ SettingManager::SettingManager(QObject *parent)
       m_toolBox(
           QKeySequence(Qt::KeyboardModifier::ShiftModifier | Qt::Key_Space)),
       m_toolwinMod(Qt::KeyboardModifier::ControlModifier),
-      m_toolMouse(Qt::MouseButton::MidButton) {
+      m_toolMouse(Qt::MouseButton::MidButton), ismod(false), loaded(false) {
+
+  auto pathdir =
+      QString("%1/%2/%3")
+          .arg(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
+          .arg(qApp->organizationName())
+          .arg(qApp->applicationName());
+  QDir().mkpath(pathdir);
+
+  configfile = pathdir + "/config.conf";
+
   m_instance = this;
 }
 
@@ -21,18 +31,12 @@ SettingManager *SettingManager::instance() { return m_instance; }
 bool SettingManager::loadSettings(QString filename) {
 
 #define CORRECTINFO(info)                                                      \
-  info.pluginIndex = plgsys->pluginIndexByProvider(info.provider);             \
   if (info.isPlugin) {                                                         \
+    info.pluginIndex = plgsys->pluginIndexByProvider(info.provider);           \
     info.process = plgsys->plugin(info.pluginIndex)->pluginName();             \
   }
 
-  QString strConfigPath = filename.isEmpty()
-                              ? QString("%1/%2/%3/config.conf")
-                                    .arg(QStandardPaths::writableLocation(
-                                        QStandardPaths::ConfigLocation))
-                                    .arg(qApp->organizationName())
-                                    .arg(qApp->applicationName())
-                              : filename;
+  QString strConfigPath = filename.isEmpty() ? configfile : filename;
 
   QFile f(strConfigPath);
   QDataStream stream(&f);
@@ -46,6 +50,22 @@ bool SettingManager::loadSettings(QString filename) {
       return false;
     }
 
+    // 读取配置文件
+    char ver;
+    stream.readRawData(&ver, 1);
+
+    if (ver != CONFIGVER) {
+      f.close();
+      return false;
+    }
+
+    if (filename.length())
+      ismod = true;
+
+    // 如果已经加载了设置，重置重新加载
+    if (loaded)
+      resetSettings();
+
     auto plgsys = PluginSystem::instance();
 
     // General
@@ -54,6 +74,8 @@ bool SettingManager::loadSettings(QString filename) {
 
     // 读取结束，提示可以加载基础配置内容了
     emit loadedGeneral();
+
+    QVector<QByteArray> hashes;
 
     // 读取 Hotkey 的相关信息
     int len;
@@ -68,7 +90,17 @@ bool SettingManager::loadSettings(QString filename) {
         buf.provider = QString::fromUtf8(arr);
         stream >> arr;
         buf.params = QString::fromUtf8(arr);
-        stream >> arr;
+
+        bool isStored;
+        stream >> isStored;
+        if (isStored) {
+          int index;
+          stream >> index;
+          arr = hashes[index];
+        } else {
+          stream >> arr;
+          hashes.append(arr);
+        }
 
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
@@ -110,6 +142,18 @@ bool SettingManager::loadSettings(QString filename) {
         buf.provider = QString::fromUtf8(arr);
         stream >> arr;
         buf.params = QString::fromUtf8(arr);
+
+        bool isStored;
+        stream >> isStored;
+        if (isStored) {
+          int index;
+          stream >> index;
+          arr = hashes[index];
+        } else {
+          stream >> arr;
+          hashes.append(arr);
+        }
+
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
         if (pi < 0)
@@ -146,7 +190,18 @@ bool SettingManager::loadSettings(QString filename) {
         buf.provider = QString::fromUtf8(arr);
         stream >> arr;
         buf.params = QString::fromUtf8(arr);
-        stream >> arr;
+
+        bool isStored;
+        stream >> isStored;
+        if (isStored) {
+          int index;
+          stream >> index;
+          arr = hashes[index];
+        } else {
+          stream >> arr;
+          hashes.append(arr);
+        }
+
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
         if (pi < 0)
@@ -173,16 +228,17 @@ bool SettingManager::loadSettings(QString filename) {
     emit loadedGeneral();
   }
   f.close();
+  loaded = true;
   return true;
 }
 
 bool SettingManager::saveSettings() {
-  QString strConfigPath =
-      QString("%1/%2/%3/config.conf")
-          .arg(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
-          .arg(qApp->organizationName())
-          .arg(qApp->applicationName());
-  return exportSettings(strConfigPath);
+  if (!ismod && QFile::exists(configfile))
+    return true;
+  auto res = exportSettings(configfile);
+  if (res)
+    ismod = false;
+  return res;
 }
 
 bool SettingManager::exportSettings(QString filename) {
@@ -190,8 +246,8 @@ bool SettingManager::exportSettings(QString filename) {
   QDataStream stream(&f);
   if (f.open(QFile::WriteOnly)) {
     // 写文件头
-    static char header[] = "WINGTOOL";
-    stream.writeRawData(header, 8);
+    static char header[] = {'W', 'I', 'N', 'G', 'T', 'O', 'O', 'L', CONFIGVER};
+    stream.writeRawData(header, sizeof(header));
     // General
     stream << m_toolwin << m_wintool << m_toolGridSize << m_toolBox
            << m_toolwinMod << m_toolMouse;
@@ -204,13 +260,34 @@ bool SettingManager::exportSettings(QString filename) {
   return false;
 }
 
-void SettingManager::resetSettings() {}
+void SettingManager::resetSettings() {
+  emit sigReset();
+  m_toolwin = true;
+  m_wintool = true;
+  m_toolGridSize = TOOLGRIDSIZE;
+
+  m_toolBox = QKeySequence(Qt::KeyboardModifier::ShiftModifier | Qt::Key_Space);
+  m_toolwinMod = Qt::KeyboardModifier::ControlModifier;
+  m_toolMouse = Qt::MouseButton::MidButton;
+  ismod = true;
+
+  // 更新 UI
+  emit sigToolwinEnabledChanged(m_toolwin);
+  emit sigWintoolEnabledChanged(m_wintool);
+  emit sigToolGridSizeChanged(m_toolGridSize);
+  emit sigToolBoxHotkeyChanged(m_toolBox);
+  emit sigToolwinModChanged(m_toolwinMod);
+  emit sigToolwinMouseBtnChanged(m_toolMouse);
+}
+
+void SettingManager::setModified() { ismod = true; }
 
 int SettingManager::toolGridSize() const { return m_toolGridSize; }
 
 void SettingManager::setToolGridSize(const int v) {
   if (v > 0) {
     m_toolGridSize = v;
+    ismod = true;
     emit sigToolGridSizeChanged(v);
   }
 }
@@ -219,6 +296,7 @@ QKeySequence SettingManager::toolBoxHotkey() const { return m_toolBox; }
 
 void SettingManager::setToolBoxHotkey(const QKeySequence seq) {
   m_toolBox = seq;
+  ismod = true;
   emit sigToolBoxHotkeyChanged(seq);
 }
 
@@ -226,6 +304,7 @@ Qt::KeyboardModifier SettingManager::toolwinMod() const { return m_toolwinMod; }
 
 void SettingManager::setToolwinMod(const Qt::KeyboardModifier &toolwinMod) {
   m_toolwinMod = toolwinMod;
+  ismod = true;
   emit sigToolwinModChanged(toolwinMod);
 }
 
@@ -233,6 +312,7 @@ Qt::MouseButton SettingManager::toolwinMouseBtn() const { return m_toolMouse; }
 
 void SettingManager::setToolMouseBtn(const Qt::MouseButton &toolMouse) {
   m_toolMouse = toolMouse;
+  ismod = true;
   emit sigToolwinMouseBtnChanged(toolMouse);
 }
 
@@ -240,6 +320,7 @@ bool SettingManager::toolwinEnabled() const { return m_toolwin; }
 
 void SettingManager::setToolwinEnabled(bool toolwin) {
   m_toolwin = toolwin;
+  ismod = true;
   emit sigToolwinEnabledChanged(toolwin);
 }
 
@@ -247,5 +328,6 @@ bool SettingManager::wintoolEnabled() const { return m_wintool; }
 
 void SettingManager::setWintoolEnabled(bool wintool) {
   m_wintool = wintool;
+  ismod = true;
   emit sigWintoolEnabledChanged(wintool);
 }

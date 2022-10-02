@@ -6,6 +6,7 @@
 DWIDGET_USE_NAMESPACE
 
 class WingApplication : public DApplication {
+  Q_OBJECT
 public:
   WingApplication(int &argc, char **argv);
 

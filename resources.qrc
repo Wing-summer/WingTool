@@ -12,5 +12,6 @@
         <file>images/edit.svg</file>
         <file>images/up.svg</file>
         <file>images/swap.svg</file>
+        <file>images/README.md</file>
     </qresource>
 </RCC>

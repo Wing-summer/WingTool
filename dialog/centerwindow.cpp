@@ -294,6 +294,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     if (d.exec()) {
       auto res = d.getResult();
       this->setoolWinInfo(sellbl, res);
+      sm->setModified();
       emit lbls[sellbl]->toggled(true);
     }
   });
@@ -401,7 +402,12 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   AddMenuAction(tr("Down"), &CenterWindow::on_downWinTool);
   lscmenu.append(a);
   AddMenuAction(tr("TopMost"), [=] {
+    if (lstoolwin->count() == 1)
+      return;
+
     auto sels = lstoolwin->selectionModel()->selectedRows();
+    if (sels.isEmpty())
+      return;
     QVector<int> nums;
     for (auto &item : sels) {
       nums.append(item.row());
@@ -425,10 +431,16 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
       lstoolwin->insertItem(i, item);
       wintool.mvItem(pi, i);
     }
+    sm->setModified();
   });
   lscmenu.append(a);
   AddMenuAction(tr("DownMost"), [=] {
+    if (lstoolwin->count() == 1)
+      return;
+
     auto sels = lstoolwin->selectionModel()->selectedRows();
+    if (sels.isEmpty())
+      return;
     QVector<int> nums;
     for (auto &item : sels) {
       nums.append(item.row());
@@ -440,6 +452,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     int i = 0;
     auto len = nums.count();
     if (nums.first() == lstoolwin->count() - 1) {
+      i++;
       int pi = nums.first();
       for (; i < len; i++) {
         pi--;
@@ -456,6 +469,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
       lstoolwin->insertItem(i, item);
       wintool.mvItem(pi, i);
     }
+    sm->setModified();
   });
   lscmenu.append(a);
   lstoolwin->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -642,6 +656,7 @@ void CenterWindow::editTask(int index) {
 
     task = res;
     manager->editHotkey(hk, res.seq);
+    sm->setModified();
   }
 }
 
@@ -669,6 +684,7 @@ void CenterWindow::on_removeHotkey() {
     manager->unregisterHotkey(hk);
     tbhotkeys->removeRow(row);
   }
+  sm->setModified();
 }
 
 void CenterWindow::on_clearHotkey() {
@@ -676,6 +692,7 @@ void CenterWindow::on_clearHotkey() {
   hotkeys.clear();
   manager->clearHotkey();
   tbhotkeys->setRowCount(0);
+  sm->setModified();
   DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                            tr("ClearSuccess"));
 }
@@ -705,6 +722,7 @@ void CenterWindow::on_addHotkey() {
     wt = new QTableWidgetItem(res.params);
     wt->setToolTip(res.params);
     tbhotkeys->setItem(index, 3, wt);
+    sm->setModified();
   }
 }
 
@@ -712,6 +730,7 @@ void CenterWindow::enableSelectedHotkeys(bool enable) {
   auto selrows = tbhotkeys->selectionModel()->selectedRows();
   for (auto &item : selrows) {
     manager->enableHotKey(hotkeys[item.row()], enable);
+    sm->setModified();
   }
 }
 
@@ -728,15 +747,20 @@ void CenterWindow::on_editWinTool() {
     auto res = d.getResult();
     wintoolinfos[index] = res;
     auto item = lstoolwin->item(index);
-    item->setIcon(
-        Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res));
-    item->setText(Utilities::getProgramName(res));
+    auto plg = plgsys->plugin(res.pluginIndex);
+    item->setIcon(Utilities::trimIconFromInfo(plg, res));
+    item->setText(Utilities::getProgramName(plg, res));
     item->setToolTip(res.process);
+    sm->setModified();
   }
 }
 
 void CenterWindow::on_removeWinTool() {
   auto sels = lstoolwin->selectionModel()->selectedRows();
+
+  if (sels.isEmpty())
+    return;
+
   QVector<int> nums;
   for (auto &item : sels) {
     nums.append(item.row());
@@ -750,12 +774,14 @@ void CenterWindow::on_removeWinTool() {
     delete item;
     wintool.rmItem(index);
   }
+  sm->setModified();
 }
 
 void CenterWindow::on_clearWinTool() {
   lstoolwin->clear();
   wintoolinfos.clear();
   wintool.rmItem(-1); // 清空数据
+  sm->setModified();
   DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                            tr("ClearSuccess"));
 }
@@ -767,27 +793,32 @@ void CenterWindow::on_addWinTool() {
     auto index = lstoolwin->currentRow();
     if (index < 0) {
       wintoolinfos.append(res);
-      auto item = new QListWidgetItem(
-          Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res),
-          Utilities::getProgramName(res));
-      item->setToolTip(res.process);
+      auto plg = plgsys->plugin(res.pluginIndex);
+      auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, res),
+                                      Utilities::getProgramName(plg, res));
+      item->setToolTip(Utilities::getToolTipContent(plg, res));
       lstoolwin->addItem(item);
       wintool.addItem(res);
     } else {
       wintoolinfos.insert(index + 1, res);
-
-      auto item = new QListWidgetItem(
-          Utilities::trimIconFromInfo(plgsys->plugin(res.pluginIndex), res),
-          Utilities::getProgramName(res));
-      item->setToolTip(res.process);
+      auto plg = plgsys->plugin(res.pluginIndex);
+      auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, res),
+                                      Utilities::getProgramName(plg, res));
+      item->setToolTip(Utilities::getToolTipContent(plg, res));
       lstoolwin->insertItem(index + 1, item);
       wintool.addItem(res, index + 1);
     }
+    sm->setModified();
   }
 }
 
 void CenterWindow::on_upWinTool() {
+  if (lstoolwin->count() == 1)
+    return;
+
   auto sels = lstoolwin->selectionModel()->selectedRows();
+  if (sels.isEmpty())
+    return;
   QVector<int> nums;
   for (auto &item : sels) {
     nums.append(item.row());
@@ -811,10 +842,17 @@ void CenterWindow::on_upWinTool() {
     lstoolwin->insertItem(p - 1, item);
     wintool.mvItem(p, p - 1);
   }
+
+  sm->setModified();
 }
 
 void CenterWindow::on_downWinTool() {
+  if (lstoolwin->count() == 1)
+    return;
+
   auto sels = lstoolwin->selectionModel()->selectedRows();
+  if (sels.isEmpty())
+    return;
   QVector<int> nums;
   for (auto &item : sels) {
     nums.append(item.row());
@@ -826,6 +864,7 @@ void CenterWindow::on_downWinTool() {
   int i = 0;
   auto len = nums.count();
   if (nums.first() == lstoolwin->count() - 1) {
+    i++;
     int pi = nums.first();
     for (; i < len; i++) {
       pi--;
@@ -842,6 +881,7 @@ void CenterWindow::on_downWinTool() {
     lstoolwin->insertItem(p + 1, item);
     wintool.mvItem(p, p + 1);
   }
+  sm->setModified();
 }
 
 void CenterWindow::on_exportSettings() {
@@ -905,10 +945,10 @@ void CenterWindow::setoolWinInfo(int index, ToolStructInfo &info) {
 
 void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
   wintoolinfos.append(info);
-  auto item = new QListWidgetItem(
-      Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info),
-      Utilities::getProgramName(info));
-  item->setToolTip(info.process);
+  auto plg = plgsys->plugin(info.pluginIndex);
+  auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, info),
+                                  Utilities::getProgramName(plg, info));
+  item->setToolTip(Utilities::getToolTipContent(plg, info));
   lstoolwin->addItem(item);
   wintool.addItem(info);
 }
@@ -935,6 +975,7 @@ void CenterWindow::initGeneralSettings() {
   sm->sigToolGridSizeChanged(sm->toolGridSize());
   connect(sbGridsize, QOverload<int>::of(&DSpinBox::valueChanged), sm,
           &SettingManager::setToolGridSize);
+  connect(tabs, &DTabWidget::currentChanged, this, [=] { sm->saveSettings(); });
 
   // WinTool 相关
   wintool.setModal(true);
@@ -1077,13 +1118,20 @@ void CenterWindow::initAppManger() {
 }
 
 void CenterWindow::getConfig(QDataStream &f) {
+  QVector<int> plgindices;
+
   // 先保存 Hotkey 的相关信息
   f << hotkeys.count(); // 先存一下有几个
   for (auto &p : scinfos) {
     f << p.enabled << p.isPlugin << p.seq;
     if (p.isPlugin) {
-      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
-        << plgsys->pluginHash(p.pluginIndex); //最后存储 MD5 表示一条信息结束了
+      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8();
+      auto i = plgindices.indexOf(p.pluginIndex);
+      if (i >= 0) {
+        f << true << i;
+      } else {
+        f << false << plgsys->pluginHash(p.pluginIndex);
+      }
     } else {
       f << p.process.toUtf8()
         << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
@@ -1100,9 +1148,13 @@ void CenterWindow::getConfig(QDataStream &f) {
     if (p.enabled) {
       f << p.isPlugin;
       if (p.isPlugin) {
-        f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
-          << plgsys->pluginHash(
-                 p.pluginIndex); //最后存储 MD5 表示一条信息结束了
+        f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8();
+        auto i = plgindices.indexOf(p.pluginIndex);
+        if (i >= 0) {
+          f << true << i;
+        } else {
+          f << false << plgsys->pluginHash(p.pluginIndex);
+        }
       } else {
         f << p.process.toUtf8()
           << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
@@ -1117,8 +1169,13 @@ void CenterWindow::getConfig(QDataStream &f) {
     // 只存储相关基础信息就可以了
     f << p.isPlugin;
     if (p.isPlugin) {
-      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
-        << plgsys->pluginHash(p.pluginIndex); //最后存储 MD5 表示一条信息结束了
+      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8();
+      auto i = plgindices.indexOf(p.pluginIndex);
+      if (i >= 0) {
+        f << true << i;
+      } else {
+        f << false << plgsys->pluginHash(p.pluginIndex);
+      }
     } else {
       f << p.process.toUtf8()
         << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
@@ -1128,7 +1185,26 @@ void CenterWindow::getConfig(QDataStream &f) {
   // 保存完毕，可以返回了
 }
 
+void CenterWindow::resetConfig() {
+  ToolStructInfo toolinfo;
+  for (auto i = 0; i < 9; i++) {
+    toolinfos[i] = toolinfo;
+    QIcon icon;
+    auto ilbl = lbls[i];
+    ilbl->setIcon(icon);
+    manager->setToolIcon(i, icon);
+  }
+  lstoolwin->clear();
+  wintoolinfos.clear();
+  wintool.rmItem(-1);
+}
+
 void CenterWindow::closeEvent(QCloseEvent *event) {
   event->ignore();
   hide();
+}
+
+void CenterWindow::showEvent(QShowEvent *event) {
+  Q_UNUSED(event);
+  sm->saveSettings();
 }

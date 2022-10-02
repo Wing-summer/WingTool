@@ -72,9 +72,11 @@ public slots:
   void initPluginSys();
   void initAppManger();
   void getConfig(QDataStream &f);
+  void resetConfig();
 
 protected:
   void closeEvent(QCloseEvent *event) override;
+  void showEvent(QShowEvent *event) override;
 
 private:
   QList<QAction *> hkcmenu, lscmenu;

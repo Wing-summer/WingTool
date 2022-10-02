@@ -1,17 +1,3 @@
-<h1 align="center"> WingSummer.WingTool</h1>
-
-<p align="center">
-<img alt="PEHexExplorer" src="images/logo.svg">
-<p align="center">羽云工具箱</p>
-</p>
-
-<p align="center">
-<img alt="作者" src="authorband.svg">
-<img alt="协议" src="licenseband.svg">
-</p>
-
-- 开源不易，给个 Star 或者 [捐助](#捐助) 吧
-
 ## WingTool
 
 &emsp;&emsp;`WingTool`是一个强大的插件工具箱，中文名`羽云工具箱`，支持热键响应、鼠标跟踪、选词等相关借口。通过开发强大的对应的插件，就可以大大提高生产力。
@@ -25,26 +11,3 @@
 ## 有关 issue
 
 &emsp;&emsp;本软件定位是本地生产力基础工具，旨在快速启动和使用高效工具。本人不考虑像 utool 和 quicker 之类提供插件商店。该程序不会进行与网络相关的任何操作，所有的插件安装都是本地的。如果有仅本地的需要，待该软件出 beta 之后，可以尝试该软件，发现 Bug 并递交修复。
-
-## 效果图
-
-<p align="center">
-<img src="screenshot.gif" >
-</p>
-
-## 捐助
-
-**<p align="center">您的每一份支持都将是本项目推进的强大动力，十分感谢您的支持</p>**
-
-<p align="center">
-
-<img alt="支付宝" src="支付宝捐助.jpg" height=50% width=50%>
-<p align="center">感谢支持</p>
-
-</p>
-
-<p align="center">
-<img alt="微信" src="微信捐助.png" height=50% width=50%>
-<p align="center">感谢支持</p>
-
-</p>

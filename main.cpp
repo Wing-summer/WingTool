@@ -38,15 +38,14 @@ int main(int argc, char *argv[]) {
   WingApplication a(fakeArgc, fakeArgs.data());
   QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
 
-  //  auto s = a.applicationDirPath() + "/lang/default.qm";
-  //  QTranslator translator;
-  //  if (!translator.load(s)) {
-  //    DMessageBox::critical(nullptr, "Error", "Error Loading Translation
-  //    File!",
-  //                          DMessageBox::Ok);
-  //    return -1;
-  //  }
-  //  a.installTranslator(&translator);
+  auto s = a.applicationDirPath() + "/lang/default.qm";
+  QTranslator translator;
+  if (!translator.load(s)) {
+    DMessageBox::critical(nullptr, "Error", "Error Loading Translation File !",
+                          DMessageBox::Ok);
+    return -1;
+  }
+  a.installTranslator(&translator);
 
   a.setOrganizationName("WingCloud");
   a.setApplicationName(QObject::tr("WingTool"));
@@ -103,6 +102,9 @@ int main(int argc, char *argv[]) {
                    &CenterWindow::addWinToolInfo);
   QObject::connect(&sm, &SettingManager::sigSaveConfig, &w,
                    &CenterWindow::getConfig);
+  QObject::connect(&sm, &SettingManager::sigReset, &w,
+                   &CenterWindow::resetConfig);
+
   sm.loadSettings();
 
   QObject::connect(&manager, &AppManager::checkToolShow,
@@ -132,9 +134,16 @@ int main(int argc, char *argv[]) {
                    [&w] { w.show(CenterWindow::TabPage::Sponsor); });
   sysmenu.addAction(ac);
   ac = new QAction(QObject::tr("Exit"), menu);
-  QObject::connect(ac, &QAction::triggered, [] { QApplication::exit(0); });
+  QObject::connect(ac, &QAction::triggered, [&w, &sm] {
+    if (DMessageBox::question(&w, QObject::tr("Exit"),
+                              QObject::tr("ConfirmExit")) == DMessageBox::Yes) {
+      sm.saveSettings();
+      QApplication::exit(0);
+    }
+  });
   sysmenu.addAction(ac);
   systray.setContextMenu(menu);
+  systray.setToolTip(QObject::tr("WingTool"));
   systray.setIcon(picon);
   systray.show();
 

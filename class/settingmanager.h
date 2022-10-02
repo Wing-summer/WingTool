@@ -7,6 +7,7 @@
 #include <QObject>
 
 #define TOOLGRIDSIZE 40
+#define CONFIGVER char(0)
 
 class SettingManager : public QObject {
   Q_OBJECT
@@ -22,6 +23,8 @@ public:
   void resetSettings();
 
 public:
+  void setModified();
+
   int toolGridSize() const;
   void setToolGridSize(const int v);
 
@@ -55,6 +58,8 @@ signals:
   void setToolWinInfo(int index, ToolStructInfo &info);
   void addWinToolInfo(ToolStructInfo &info);
 
+  void sigReset(); // 回归出厂配置信号
+
 private:
   static SettingManager *m_instance;
 
@@ -65,6 +70,10 @@ private:
 
   Qt::KeyboardModifier m_toolwinMod;
   Qt::MouseButton m_toolMouse;
+
+  bool ismod, loaded;
+
+  QString configfile;
 };
 
 #endif // SETTINGMANAGER_H

@@ -9,6 +9,7 @@
 DWIDGET_USE_NAMESPACE
 
 class ToolSwapDialog : public DDialog {
+  Q_OBJECT
 public:
   ToolSwapDialog(const QVector<QIcon> &icons, int selindex,
                  DDialog *parent = nullptr);

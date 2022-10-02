@@ -17,9 +17,10 @@
 DWIDGET_USE_NAMESPACE
 
 class ToolEditDialog : public DDialog {
+  Q_OBJECT
 public:
   ToolEditDialog(ToolStructInfo res = ToolStructInfo(),
-                    DMainWindow *parent = nullptr);
+                 DMainWindow *parent = nullptr);
   ToolStructInfo getResult(); // 这里的 enabled 和 seq 保留不使用
 
 private:

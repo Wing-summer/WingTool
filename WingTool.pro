@@ -48,3 +48,7 @@ HEADERS += \
     dialog/tooleditdialog.h \
     class/hotkey.h \
     dialog/toolswapdialog.h
+
+
+TRANSLATIONS += \
+    $$PWD/lang/zh.ts

@@ -33,4 +33,3 @@ DISTFILES += TestPlugin.json
 
 RESOURCES += \
     resources.qrc
-
