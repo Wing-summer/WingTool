@@ -65,7 +65,8 @@ private:
 
 public slots:
   void addHotKeyInfo(ToolStructInfo &info);
-  void setoolWinInfo(int index, ToolStructInfo &info);
+  void setToolWinInfo(int index, ToolStructInfo &info);
+  void setToolFinished();
   void addWinToolInfo(ToolStructInfo &info);
 
   void initGeneralSettings();

@@ -57,6 +57,7 @@ signals:
   void addHotKeyInfo(ToolStructInfo &info);
   void setToolWinInfo(int index, ToolStructInfo &info);
   void addWinToolInfo(ToolStructInfo &info);
+  void setToolFinished();
 
   void sigReset(); // 回归出厂配置信号
 

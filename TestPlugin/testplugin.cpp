@@ -14,6 +14,7 @@ bool TestPlugin::init(QList<WingPluginInfo> loadedplugin) {
   dialog = new QDialog;
   dialog->setFixedSize(400, 400);
   dialog->setWindowTitle("TestPluginConsole");
+  dialog->setWindowFlag(Qt::Tool);
   dialog->setWindowFlags(Qt::CustomizeWindowHint |
                          Qt::WindowMinimizeButtonHint |
                          Qt::WindowMaximizeButtonHint);
@@ -89,6 +90,7 @@ QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
     }
     break;
   case 2:
+    dialog->setVisible(!dialog->isVisible());
     break;
   }
   return QVariant();

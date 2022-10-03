@@ -97,7 +97,9 @@ int main(int argc, char *argv[]) {
   QObject::connect(&sm, &SettingManager::addHotKeyInfo, &w,
                    &CenterWindow::addHotKeyInfo);
   QObject::connect(&sm, &SettingManager::setToolWinInfo, &w,
-                   &CenterWindow::setoolWinInfo);
+                   &CenterWindow::setToolWinInfo);
+  QObject::connect(&sm, &SettingManager::setToolFinished, &w,
+                   &CenterWindow::setToolFinished);
   QObject::connect(&sm, &SettingManager::addWinToolInfo, &w,
                    &CenterWindow::addWinToolInfo);
   QObject::connect(&sm, &SettingManager::sigSaveConfig, &w,

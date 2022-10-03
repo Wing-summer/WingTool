@@ -40,7 +40,6 @@ signals:
   void hotkeyReleased(const Hotkey *hotkey);
   void hotkeyEnableChanged(bool value, const Hotkey *hotkey);
 
-  void selectionTextChanged(const QString &selectedText);
   bool checkToolShow(Qt::MouseButton btn);
 
   void toolSelTriggered(int index);

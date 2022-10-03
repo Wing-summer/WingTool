@@ -6,15 +6,6 @@
 AppManager *AppManager::m_instance = nullptr;
 
 AppManager::AppManager(QObject *parent) : QObject(parent) {
-  // 初始化选词监控
-  auto clipboard = qApp->clipboard();
-  connect(clipboard, &QClipboard::selectionChanged, this, [=] {
-    // 防止过多的消息干扰
-    if (!ignoremsg) {
-      emit this->selectionTextChanged(clipboard->text(QClipboard::Selection));
-    }
-  });
-
   // 初始化全局鼠标监控
 
 #define CONNECT(sig) connect(&monitor, SIGNAL(sig), SLOT(sig));
@@ -25,13 +16,14 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
 
   connect(&monitor, &EventMonitor::buttonPress,
           [=](Qt::MouseButton btn, int x, int y) {
+            ignoremsg = true;
             if (this->checkToolShow(btn)) {
               toolwin.popup(QCursor::pos());
             }
             emit this->buttonPress(btn, x, y);
           });
   connect(&monitor, &EventMonitor::mouseDrag, [=](int x, int y) {
-    ignoremsg = false;
+    ignoremsg = true;
     if (this->toolwin.isVisible())
       this->toolwin.sendMousePosUpdated();
     emit this->mouseDrag(x, y);
@@ -40,7 +32,7 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
           [=](Qt::MouseButton btn, int x, int y) {
             if (toolwin.isVisible())
               toolwin.finished();
-            ignoremsg = true;
+            ignoremsg = false;
             emit this->buttonRelease(btn, x, y);
           });
 

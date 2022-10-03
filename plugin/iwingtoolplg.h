@@ -7,7 +7,7 @@
 #include <QUuid>
 #include <QVariant>
 
-#define SDKVERSION 0
+#define SDKVERSION 1
 #define GETPLUGINQM(name)                                                      \
   (QCoreApplication::applicationDirPath() + "/plglang/" + name)
 #define PLUGINDIR (QCoreApplication::applicationDirPath() + "/plugin")
@@ -62,8 +62,7 @@ enum HookIndex {
   DoubleClicked = 8,
   MouseWheel = 16,
   MouseMove = 32,
-  MouseDrag = 64,
-  ClipBoardSelection = 128
+  MouseDrag = 64
 };
 Q_DECLARE_METATYPE(HookIndex)
 
@@ -82,23 +81,42 @@ public:
   Q_ENUM(Catagorys)
 
 public:
+  // 指示 SDK 版本，目前采用不兼容模式
   virtual int sdkVersion() = 0;
+  // 签名，目前固定为 WINGSUMMER 这个宏
   virtual QString signature() = 0;
+  // 析构函数
   virtual ~IWingToolPlg() {}
 
+  // 插件初始化函数
   virtual bool init(QList<WingPluginInfo> loadedplugin) = 0;
+  // 插件卸载函数
   virtual void unload() = 0;
-  virtual QString pluginName() = 0; // 插件的名称
-  virtual QString provider() = 0; // 插件提供者，作为插件的唯一标识
+  // 插件的名称，可以使用 tr 实现多语言
+  virtual QString pluginName() = 0;
+  // 插件提供者，作为插件的唯一标识，一定不要使用 tr 函数
+  virtual QString provider() = 0;
+  // 插件作者
   virtual QString pluginAuthor() = 0;
+  // 插件类别，目前还没啥特定的作用，以后发掘
   virtual Catagorys pluginCatagory() = 0;
+  // 插件版本号，作者定
   virtual uint pluginVersion() = 0;
+  // 插件说明
   virtual QString pluginComment() = 0;
+  // 插件图标，我建议必须有一个，否则后面不好识别
   virtual QIcon pluginIcon() = 0;
+  // 插件服务，一定不要使用 tr 函数
   virtual QStringList pluginServices() = 0;
+  // 插件服务名，如果交给 UI 显示的话就会调用这个显示
+  // 所以这个可以实现多语言，降低工具使用语言门槛
+  // 如果为空或者数量不一致，则将插件服务作为名称显示
+  virtual QStringList pluginServiceNames() { return QStringList(); }
+  // 插件订阅，如果需要跟踪鼠标就需要订阅
   virtual HookIndex getHookSubscribe() { return HookIndex::None; }
 
   // 指示是否作为工具，如果 false，则不在工具选择中显示
+  // 但这不意味着不在插件列表显示
   virtual bool isTool() { return true; }
 
 signals:

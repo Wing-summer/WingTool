@@ -18,7 +18,6 @@ PluginSystem::PluginSystem(QObject *parent)
   InitDispathcer(HookIndex::MouseWheel);
   InitDispathcer(HookIndex::DoubleClicked);
   InitDispathcer(HookIndex::MouseDrag);
-  InitDispathcer(HookIndex::ClipBoardSelection);
 
   // 初始化类别插件容器
 #define InitCatagory(catagory)                                                 \
@@ -70,12 +69,6 @@ PluginSystem::PluginSystem(QObject *parent)
       item->doubleClicked(x, y);
     }
   });
-  connect(manager, &AppManager::selectionTextChanged, this,
-          [=](const QString &selectedText) {
-            for (auto item : dispatcher[HookIndex::ClipBoardSelection]) {
-              item->selectionTextChanged(selectedText);
-            }
-          });
   connect(manager, &AppManager::hotkeyTirggered, this,
           [=](const Hotkey *hotkey) {
             if (hotkey->isHostHotkey())
@@ -239,7 +232,6 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         INSERTSUBSCRIBE(HookIndex::MouseWheel);
         INSERTSUBSCRIBE(HookIndex::DoubleClicked);
         INSERTSUBSCRIBE(HookIndex::MouseDrag);
-        INSERTSUBSCRIBE(HookIndex::ClipBoardSelection);
 
         // 连接信号
         connect(p, &IWingToolPlg::registerHotkey, this,

@@ -175,6 +175,8 @@ bool SettingManager::loadSettings(QString filename) {
       }
     }
 
+    emit setToolFinished();
+
     // 下面读取 WinTool 相关信息
     stream >> len; // 先读一下有几个
     for (auto i = 0; i < len; i++) {

@@ -259,74 +259,74 @@
         <translation>名称：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="538"/>
+        <location filename="../dialog/centerwindow.cpp" line="548"/>
         <source>RegisteredHotkey:</source>
         <translation>注册的热键：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="544"/>
+        <location filename="../dialog/centerwindow.cpp" line="554"/>
         <source>Plugins</source>
         <translation>插件</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="563"/>
+        <location filename="../dialog/centerwindow.cpp" line="573"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="568"/>
+        <location filename="../dialog/centerwindow.cpp" line="578"/>
         <source>ThanksForSponsor</source>
         <translation>感谢大家的赞助和支持！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="576"/>
+        <location filename="../dialog/centerwindow.cpp" line="586"/>
         <source>Sponsor</source>
         <translation>赞助</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="626"/>
+        <location filename="../dialog/centerwindow.cpp" line="636"/>
         <source>runErr</source>
         <translation>执行失败</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="631"/>
+        <location filename="../dialog/centerwindow.cpp" line="641"/>
         <source>err</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="631"/>
+        <location filename="../dialog/centerwindow.cpp" line="641"/>
         <source>openErr</source>
         <translation>打开失败！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="697"/>
-        <location filename="../dialog/centerwindow.cpp" line="786"/>
+        <location filename="../dialog/centerwindow.cpp" line="707"/>
+        <location filename="../dialog/centerwindow.cpp" line="796"/>
         <source>ClearSuccess</source>
         <translation>数据清空完毕</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="707"/>
+        <location filename="../dialog/centerwindow.cpp" line="717"/>
         <source>HotkeyRegisterFail</source>
         <translation>注册热键失败！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="741"/>
+        <location filename="../dialog/centerwindow.cpp" line="751"/>
         <source>PleaseSelectOne</source>
         <translation>请选择一个项目</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="889"/>
-        <location filename="../dialog/centerwindow.cpp" line="901"/>
+        <location filename="../dialog/centerwindow.cpp" line="899"/>
+        <location filename="../dialog/centerwindow.cpp" line="911"/>
         <source>Config (*.wtcfg)</source>
         <translation>羽云工具箱配置文件 (*.wtcfg)</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="895"/>
+        <location filename="../dialog/centerwindow.cpp" line="905"/>
         <source>ExportSuccess</source>
         <translation>导出成功！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="907"/>
+        <location filename="../dialog/centerwindow.cpp" line="917"/>
         <source>ImportSuccess</source>
         <translation>倒入成功！</translation>
     </message>
@@ -372,43 +372,43 @@
 <context>
     <name>PluginSystem</name>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="160"/>
+        <location filename="../plugin/pluginsystem.cpp" line="153"/>
         <source>ErrLoadPluginSign</source>
         <translation>由于插件签名不正确，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="166"/>
+        <location filename="../plugin/pluginsystem.cpp" line="159"/>
         <source>ErrLoadPluginSDKVersion</source>
         <translation>由于插件 SDK 版本不匹配，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="172"/>
+        <location filename="../plugin/pluginsystem.cpp" line="165"/>
         <source>ErrLoadPluginNoName</source>
         <translation>由于插件没有名称，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="179"/>
+        <location filename="../plugin/pluginsystem.cpp" line="172"/>
         <source>ErLoadPluginProvider</source>
         <translation>由于插件没有合法提供者，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="188"/>
-        <location filename="../plugin/pluginsystem.cpp" line="196"/>
+        <location filename="../plugin/pluginsystem.cpp" line="181"/>
+        <location filename="../plugin/pluginsystem.cpp" line="189"/>
         <source>ErLoadPluginService</source>
         <translation>由于插件没有服务，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="208"/>
+        <location filename="../plugin/pluginsystem.cpp" line="201"/>
         <source>ErrLoadInitPlugin</source>
         <translation>由于插件初始化失败，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="225"/>
+        <location filename="../plugin/pluginsystem.cpp" line="218"/>
         <source>PluginInitRegister</source>
         <translation>插件注册开始</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="331"/>
+        <location filename="../plugin/pluginsystem.cpp" line="323"/>
         <source>ErrLoadPluginLoc</source>
         <translation>插件加载失败错误位置：</translation>
     </message>
@@ -479,39 +479,40 @@
         <translation>版本</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="52"/>
-        <location filename="../main.cpp" line="58"/>
+        <location filename="../main.cpp" line="51"/>
+        <location filename="../main.cpp" line="57"/>
+        <location filename="../main.cpp" line="146"/>
         <source>WingTool</source>
         <translation>羽云工具箱</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="124"/>
+        <location filename="../main.cpp" line="123"/>
         <source>ShowMain</source>
         <translation>显示主窗体</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="129"/>
+        <location filename="../main.cpp" line="128"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="133"/>
+        <location filename="../main.cpp" line="132"/>
         <source>Sponsor</source>
         <translation>赞助</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="137"/>
-        <location filename="../main.cpp" line="139"/>
+        <location filename="../main.cpp" line="136"/>
+        <location filename="../main.cpp" line="138"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="140"/>
+        <location filename="../main.cpp" line="139"/>
         <source>ConfirmExit</source>
         <translation>你确认继续关闭该程序吗？</translation>
     </message>
     <message>
-        <location filename="../utilities.h" line="134"/>
+        <location filename="../utilities.h" line="135"/>
         <source>Process:%1
 Service:%2
 Params:%3</source>
@@ -520,11 +521,41 @@ Params:%3</source>
 参数：%3</translation>
     </message>
     <message>
-        <location filename="../utilities.h" line="139"/>
+        <location filename="../utilities.h" line="140"/>
         <source>Process:%1
 Params:%2</source>
         <translation>进程：%1
 参数：%2</translation>
+    </message>
+    <message>
+        <location filename="../class/settings.cpp" line="4"/>
+        <source>Explor</source>
+        <translation>探索</translation>
+    </message>
+    <message>
+        <location filename="../class/settings.cpp" line="5"/>
+        <source>Productivity</source>
+        <translation>生产力</translation>
+    </message>
+    <message>
+        <location filename="../class/settings.cpp" line="6"/>
+        <source>Searcher</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
+        <location filename="../class/settings.cpp" line="7"/>
+        <source>Picture</source>
+        <translation>图像</translation>
+    </message>
+    <message>
+        <location filename="../class/settings.cpp" line="8"/>
+        <source>Develop</source>
+        <translation>开发</translation>
+    </message>
+    <message>
+        <location filename="../class/settings.cpp" line="9"/>
+        <source>Creative</source>
+        <translation>创造力</translation>
     </message>
 </context>
 <context>

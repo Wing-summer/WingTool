@@ -38,7 +38,7 @@ ShortCutEditDialog::ShortCutEditDialog(ToolStructInfo res, DMainWindow *parent)
       lblp->setText(tr("Service"));
       fcedit->setVisible(false);
       cbService->clear();
-      cbService->addItems(plg->pluginServices());
+      Utilities::addPluginServiceNames(cbService, plg);
       cbService->setVisible(true);
     } else {
       lblp->setText(tr("FilePath"));
@@ -61,7 +61,7 @@ ShortCutEditDialog::ShortCutEditDialog(ToolStructInfo res, DMainWindow *parent)
 
   cbService = new DComboBox(this);
   if (res.isPlugin) {
-    cbService->addItems(ps->getSelectedPlg()->pluginServices());
+    Utilities::addPluginServiceNames(cbService, ps->getSelectedPlg());
     cbService->setCurrentIndex(res.serviceID);
   }
   cbService->setVisible(res.isPlugin);

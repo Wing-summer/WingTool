@@ -2,6 +2,7 @@
 #define UTILIES_H
 
 #include "plugin/iwingtoolplg.h"
+#include <QComboBox>
 #include <QIcon>
 #include <QKeySequence>
 #include <QMimeDatabase>
@@ -140,6 +141,24 @@ public:
           .arg(info.process)
           .arg(info.params);
     }
+  }
+
+  static void addPluginServiceNames(QComboBox *combox, IWingToolPlg *plg) {
+    auto c = plg->pluginServices().count();
+    auto cn = plg->pluginServiceNames().count();
+    if (c == cn)
+      combox->addItems(plg->pluginServiceNames());
+    else
+      combox->addItems(plg->pluginServices());
+  }
+
+  static QString getPluginServiceName(IWingToolPlg *plg, int index) {
+    auto c = plg->pluginServices().count();
+    auto cn = plg->pluginServiceNames().count();
+    if (c == cn)
+      return plg->pluginServiceNames()[index];
+    else
+      return plg->pluginServices()[index];
   }
 };
 

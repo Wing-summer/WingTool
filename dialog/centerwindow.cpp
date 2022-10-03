@@ -243,8 +243,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
             tbtoolinfo->setText(tr("[Plugin]"));
             tbtoolinfo->append(QObject::tr("PluginName:") + plg->pluginName());
-            tbtoolinfo->append(tr("Service:") +
-                               plg->pluginServices()[info.serviceID]);
+            tbtoolinfo->append(tr("Service:") + Utilities::getPluginServiceName(
+                                                    plg, info.serviceID));
             tbtoolinfo->append(tr("Params:") + info.params);
 
             auto fw = tbtoolinfo->fontMetrics().horizontalAdvance('=');
@@ -274,14 +274,11 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   }
   auto lbl4 = lbls[4];
   lbl4->setIcon(ICONRES("close"));
-  lbl4->setCheckable(false);
 
   tvlayout->addWidget(gw, 0, Qt::AlignCenter);
   tbtoolinfo = new DTextBrowser(w);
   tbtoolinfo->setUndoRedoEnabled(false);
   tvlayout->addWidget(tbtoolinfo);
-
-  lbls[0]->setChecked(true);
 
   group = new DButtonBox(this);
   blist.clear(); // 重新征用
@@ -293,7 +290,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     ToolEditDialog d(toolinfos[sellbl]);
     if (d.exec()) {
       auto res = d.getResult();
-      this->setoolWinInfo(sellbl, res);
+      this->setToolWinInfo(sellbl, res);
       sm->setModified();
       emit lbls[sellbl]->toggled(true);
     }
@@ -530,9 +527,19 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     tbplginfo->append(QObject::tr("Provider:") + plg->provider());
 
     tbplginfo->append(QObject::tr("Services:"));
-    int i = 0;
-    for (auto &item : plg->pluginServices()) {
-      tbplginfo->append(QString("\t%1 : %2").arg(i++).arg(item));
+
+    auto c = plg->pluginServices();
+    auto cn = plg->pluginServiceNames();
+    if (c.count() == cn.count()) {
+      for (int i = 0; i < c.count(); i++) {
+        tbplginfo->append(
+            QString("\t%1 : %2 ( %3 )").arg(i).arg(cn[i]).arg(c[i]));
+      }
+    } else {
+      int i = 0;
+      for (auto &item : plg->pluginServices()) {
+        tbplginfo->append(QString("\t%1 : %2").arg(i++).arg(item));
+      }
     }
 
     tbplginfo->append(tr("RegisteredHotkey:"));
@@ -934,7 +941,7 @@ void CenterWindow::addHotKeyInfo(ToolStructInfo &info) {
   manager->enableHotKey(hk, info.enabled);
 }
 
-void CenterWindow::setoolWinInfo(int index, ToolStructInfo &info) {
+void CenterWindow::setToolWinInfo(int index, ToolStructInfo &info) {
   toolinfos[index] = info;
   auto icon =
       Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info);
@@ -942,6 +949,8 @@ void CenterWindow::setoolWinInfo(int index, ToolStructInfo &info) {
   ilbl->setIcon(icon);
   manager->setToolIcon(index, icon);
 }
+
+void CenterWindow::setToolFinished() { lbls[0]->setChecked(true); }
 
 void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
   wintoolinfos.append(info);
