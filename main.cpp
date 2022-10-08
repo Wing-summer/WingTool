@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
   //解决 root/ubuntu 主题样式走形
   qputenv("XDG_CURRENT_DESKTOP", "Deepin");
   QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+  QApplication::setQuitOnLastWindowClosed(false);
 
   // 程序内强制添加 -platformtheme
   // deepin 参数喂给 Qt 让 Qt 正确使用 Deepin 主题修复各种奇怪样式问题
@@ -35,8 +36,8 @@ int main(int argc, char *argv[]) {
     fakeArgs[i + 2] = argv[i];
   int fakeArgc = argc + 2;
 
-  WingApplication a(fakeArgc, fakeArgs.data());
   QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
+  WingApplication a(fakeArgc, fakeArgs.data());
 
   auto s = a.applicationDirPath() + "/lang/default.qm";
   QTranslator translator;
@@ -153,7 +154,7 @@ int main(int argc, char *argv[]) {
                    [&w](QSystemTrayIcon::ActivationReason reason) {
                      if (reason == QSystemTrayIcon::ActivationReason::Trigger) {
                        w.show(CenterWindow::TabPage::General);
-                       Utilities::activeWindowFromDock(w.winId());
+                       w.raise();
                      }
                    });
 

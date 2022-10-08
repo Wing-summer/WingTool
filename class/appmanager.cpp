@@ -16,14 +16,12 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
 
   connect(&monitor, &EventMonitor::buttonPress,
           [=](Qt::MouseButton btn, int x, int y) {
-            ignoremsg = true;
             if (this->checkToolShow(btn)) {
               toolwin.popup(QCursor::pos());
             }
             emit this->buttonPress(btn, x, y);
           });
   connect(&monitor, &EventMonitor::mouseDrag, [=](int x, int y) {
-    ignoremsg = true;
     if (this->toolwin.isVisible())
       this->toolwin.sendMousePosUpdated();
     emit this->mouseDrag(x, y);
@@ -32,7 +30,6 @@ AppManager::AppManager(QObject *parent) : QObject(parent) {
           [=](Qt::MouseButton btn, int x, int y) {
             if (toolwin.isVisible())
               toolwin.finished();
-            ignoremsg = false;
             emit this->buttonRelease(btn, x, y);
           });
 

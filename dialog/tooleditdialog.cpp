@@ -4,7 +4,8 @@
 #include <QShortcut>
 
 ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
-    : DDialog(parent), manager(AppManager::instance()) {
+    : DDialog(parent), manager(AppManager::instance()),
+      plgsys(PluginSystem::instance()) {
 
   // 处于编辑状态直接堵塞所有相应（屏蔽鼠标追踪和热键触发以防干扰）
   manager->blockSignals(true);
@@ -21,7 +22,7 @@ ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
       lblp->setText(tr("Service"));
       fcedit->setVisible(false);
       cbService->clear();
-      Utilities::addPluginServiceNames(cbService, plg);
+      cbService->addItems(plgsys->pluginServicetrNames(plg));
       cbService->setVisible(true);
     } else {
       lblp->setText(tr("FilePath"));
@@ -44,7 +45,7 @@ ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
 
   cbService = new DComboBox(this);
   if (res.isPlugin) {
-    Utilities::addPluginServiceNames(cbService, ps->getSelectedPlg());
+    cbService->addItems(plgsys->pluginServicetrNames(ps->getSelectedPlg()));
     cbService->setCurrentIndex(res.serviceID);
   }
   cbService->setVisible(res.isPlugin);
@@ -79,7 +80,7 @@ void ToolEditDialog::on_accept() {
     auto sel = ps->getSelectedPlg();
     res.process = sel->pluginName();
     res.serviceID = cbService->currentIndex();
-    res.provider = sel->provider();
+    res.provider = plgsys->pluginProvider(sel);
     res.pluginIndex = ps->getSelectedIndex();
   } else {
     res.process = fcedit->text();

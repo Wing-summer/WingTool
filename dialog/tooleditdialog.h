@@ -32,6 +32,7 @@ protected:
 
 private:
   AppManager *manager;
+  PluginSystem *plgsys;
   ToolStructInfo res;
 
   PluginSelector *ps;

@@ -52,8 +52,6 @@ private:
   EventMonitor monitor;
   QList<Hotkey *> hotkeys;
 
-  bool ignoremsg = false;
-
   static AppManager *m_instance;
 
   ToolWindow toolwin;

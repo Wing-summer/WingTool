@@ -7,7 +7,7 @@
 #include <QObject>
 
 #define TOOLGRIDSIZE 40
-#define CONFIGVER char(0)
+#define CONFIGVER char(1)
 
 class SettingManager : public QObject {
   Q_OBJECT
@@ -43,12 +43,16 @@ public:
   bool wintoolEnabled() const;
   void setWintoolEnabled(bool wintoolEnabled);
 
+  QKeySequence runWinHotkey() const;
+  void setRunWinHotkey(const QKeySequence &runWinHotkey);
+
 signals:
   void sigToolwinEnabledChanged(bool b);
   void sigWintoolEnabledChanged(bool b);
   void sigToolGridSizeChanged(int v);
   void loadedGeneral();
   void sigToolBoxHotkeyChanged(const QKeySequence seq);
+  void sigRunWinHotkeyChanged(const QKeySequence seq);
   void sigToolwinModChanged(const Qt::KeyboardModifier mod);
   void sigToolwinMouseBtnChanged(const Qt::MouseButton btn);
   void sigSaveConfig(QDataStream &stream);
@@ -67,13 +71,12 @@ private:
   bool m_toolwin, m_wintool;
   int m_toolGridSize;
 
-  QKeySequence m_toolBox;
+  QKeySequence m_toolBox, m_runWin;
 
   Qt::KeyboardModifier m_toolwinMod;
   Qt::MouseButton m_toolMouse;
 
   bool ismod, loaded;
-
   QString configfile;
 };
 

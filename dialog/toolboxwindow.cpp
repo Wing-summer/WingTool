@@ -40,7 +40,7 @@ ToolBoxWindow::ToolBoxWindow(DMainWindow *parent) : DDialog(parent) {
           [=](QListWidgetItem *item) { item->setSelected(true); });
 }
 
-void ToolBoxWindow::addItem(ToolStructInfo &info, int index) {
+void ToolBoxWindow::addItem(ToolStructInfo &info, QString service, int index) {
   auto plgsys = PluginSystem::instance();
   auto plg = plgsys->plugin(info.pluginIndex);
   auto icon = Utilities::trimIconFromInfo(plg, info);
@@ -50,7 +50,7 @@ void ToolBoxWindow::addItem(ToolStructInfo &info, int index) {
       '\n';
 
   if (info.isPlugin)
-    content += (tr("Service:") + plg->pluginServices()[info.serviceID]);
+    content += (tr("Service:") + service);
   if (info.params.length())
     content += ('\n' + tr("Params:") + info.params);
 

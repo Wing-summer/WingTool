@@ -19,6 +19,7 @@ protected:
 private:
   DListWidget *lsplgs;
   DTextBrowser *tbplginfo;
+  PluginSystem *plgsys;
 };
 
 #endif // PLUGINSELDIALOG_H

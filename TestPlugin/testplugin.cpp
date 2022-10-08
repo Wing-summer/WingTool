@@ -1,16 +1,10 @@
 #include "testplugin.h"
 #include <QMessageBox>
 
-TestPlugin::TestPlugin(QObject *parent) { Q_UNUSED(parent) }
+TestPlugin::TestPlugin(QObject *parent) {
+  Q_UNUSED(parent);
+  qRegisterMetaType<TestService>("TestService");
 
-int TestPlugin::sdkVersion() { return SDKVERSION; }
-
-QString TestPlugin::signature() { return WINGSUMMER; }
-
-TestPlugin::~TestPlugin() {}
-
-bool TestPlugin::init(QList<WingPluginInfo> loadedplugin) {
-  Q_UNUSED(loadedplugin);
   dialog = new QDialog;
   dialog->setFixedSize(400, 400);
   dialog->setWindowTitle("TestPluginConsole");
@@ -21,7 +15,24 @@ bool TestPlugin::init(QList<WingPluginInfo> loadedplugin) {
   tbinfo = new QTextBrowser(dialog);
   tbinfo->setFixedSize(dialog->size());
   tbinfo->setUndoRedoEnabled(false);
+  services = new TestService(tbinfo, dialog);
+}
+
+int TestPlugin::sdkVersion() { return SDKVERSION; }
+
+QString TestPlugin::signature() { return WINGSUMMER; }
+
+TestPlugin::~TestPlugin() {}
+
+bool TestPlugin::init(QList<WingPluginInfo> loadedplugin) {
+  Q_UNUSED(loadedplugin);
   dialog->show();
+  auto s = GETPLUGINQM("TestPlugin.qm");
+  if (!translator.load(s) || !QApplication::installTranslator(&translator)) {
+    QMessageBox::critical(nullptr, "Error", "Error Loading File!",
+                          QMessageBox::Ok);
+    return false;
+  }
   return true;
 }
 
@@ -31,8 +42,6 @@ void TestPlugin::unload() {
 }
 
 QString TestPlugin::pluginName() { return "TestPlugin"; }
-
-QString TestPlugin::provider() { return "testpro"; }
 
 QString TestPlugin::pluginAuthor() { return WINGSUMMER; }
 
@@ -46,7 +55,11 @@ QString TestPlugin::pluginComment() { return "This is a test plugin !"; }
 
 QIcon TestPlugin::pluginIcon() { return QIcon(":/TestPlugin/logo.svg"); }
 
-QStringList TestPlugin::pluginServices() { return {"func1", "func2", "func3"}; }
+const QPointer<QObject> TestPlugin::serviceHandler() {
+  return QPointer<QObject>(services);
+}
+
+const QMetaObject *TestPlugin::serviceMeta() { return services->metaObject(); }
 
 HookIndex TestPlugin::getHookSubscribe() { return HookIndex::None; }
 

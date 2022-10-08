@@ -42,7 +42,6 @@ public:
   void show(TabPage index);
 
 private:
-  QStringList parseCmdParams(QString str);
   bool runTask(ToolStructInfo record);
   void editTask(int index);
 
@@ -62,6 +61,7 @@ private:
   void on_exportSettings();
   void on_importSettings();
   void on_resetSettings();
+  void on_runplg();
 
 public slots:
   void addHotKeyInfo(ToolStructInfo &info);
@@ -103,11 +103,13 @@ private:
   int sellbl = 0;
 
   DKeySequenceEdit *kseqTool;
+  DKeySequenceEdit *kseqRun;
   DComboBox *cbMod, *cbMouseBtn;
 
   DSpinBox *sbGridsize;
 
   Hotkey *hkwintool;
+  Hotkey *hkrunwin;
   ToolBoxWindow wintool;
 
 private:

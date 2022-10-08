@@ -6,7 +6,8 @@
 #include <QHBoxLayout>
 #include <QMetaEnum>
 
-PluginSelDialog::PluginSelDialog(DDialog *parent) : DDialog(parent) {
+PluginSelDialog::PluginSelDialog(DDialog *parent)
+    : DDialog(parent), plgsys(PluginSystem::instance()) {
   setWindowTitle(tr("PluginSelectingDialog"));
 
   auto w = new QWidget(this);
@@ -43,11 +44,15 @@ PluginSelDialog::PluginSelDialog(DDialog *parent) : DDialog(parent) {
                       QString::number(plg->pluginVersion()));
     tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
     tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
-    tbplginfo->append(QObject::tr("Provider:") + plg->provider());
+    tbplginfo->append(QObject::tr("Provider:") + plgsys->pluginProvider(plg));
     tbplginfo->append(QObject::tr("Services:"));
-    int i = 0;
-    for (auto &item : plg->pluginServices()) {
-      tbplginfo->append(QString("\t%1 : %2").arg(i++).arg(item));
+
+    auto &srvs = plgsys->pluginServiceNames(plg);
+    auto &trsrvs = plgsys->pluginServicetrNames(plg);
+    auto len = srvs.count();
+    for (auto i = 0; i < len; i++) {
+      tbplginfo->append(
+          QString("\t%1 : %2 ( %3 )").arg(i).arg(trsrvs[i]).arg(srvs[i]));
     }
   });
 

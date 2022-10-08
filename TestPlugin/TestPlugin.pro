@@ -33,3 +33,6 @@ DISTFILES += TestPlugin.json
 
 RESOURCES += \
     resources.qrc
+
+TRANSLATIONS += \
+    $$PWD/lang/zh.ts

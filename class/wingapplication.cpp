@@ -1,4 +1,5 @@
 #include "wingapplication.h"
+#include <DLog>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -6,8 +7,13 @@
 #include <QStandardPaths>
 #include <QUnhandledException>
 
+DCORE_USE_NAMESPACE
+
 WingApplication::WingApplication(int &argc, char **argv)
-    : DApplication(argc, argv) {}
+    : DApplication(argc, argv) {
+  DLogManager::registerFileAppender();
+  DLogManager::registerConsoleAppender();
+}
 
 bool WingApplication::notify(QObject *obj, QEvent *event) {
   bool done = true;

@@ -8,7 +8,6 @@
 #include <QMimeDatabase>
 #include <QString>
 #include <QtDBus>
-
 #define ProgramIcon QIcon(":/images/logo.svg")
 #define ICONRES(name) QIcon(":/images/" name ".png")
 #define ICONRES2(name) QIcon(":/images/" name ".svg")
@@ -33,20 +32,6 @@ Q_DECLARE_METATYPE(ToolStructInfo)
 
 class Utilities {
 public:
-  static bool activeWindowFromDock(quintptr winId) {
-    bool bRet = true;
-    // new interface use application as id
-    QDBusInterface dockDbusInterface("com.deepin.dde.daemon.Dock",
-                                     "/com/deepin/dde/daemon/Dock",
-                                     "com.deepin.dde.daemon.Dock");
-    QDBusReply<void> reply = dockDbusInterface.call("ActivateWindow", winId);
-    if (!reply.isValid()) {
-      qDebug() << "call com.deepin.dde.daemon.Dock failed" << reply.error();
-      bRet = false;
-    }
-    return bRet;
-  }
-
   static QIcon processPluginIcon(IWingToolPlg *plg) {
     if (plg->pluginIcon().isNull()) {
       return ICONRES("plugin");
@@ -68,12 +53,13 @@ public:
     QDataStream f(&b);
 
     b.open(QBuffer::WriteOnly);
-    f << plg->isTool() << plg->pluginServices();
+    f << plg->isTool() << plg->serviceMeta();
     b.close();
     return buffer;
   }
 
-  static bool isPluginCompatible(IWingToolPlg *plg, QByteArray &old) {
+  static bool isPluginCompatible(IWingToolPlg *plg, const QStringList &newsrvs,
+                                 QByteArray &old) {
     if (!plg)
       return false;
 
@@ -92,18 +78,17 @@ public:
     QStringList services;
     f >> services;
 
-    auto srv = plg->pluginServices();
     auto len = services.count();
 
     // 服务比原来的都少了，肯定不兼容
-    if (srv.count() < len) {
+    if (newsrvs.count() < len) {
       b.close();
       return false;
     }
 
     // 开始评判函数，函数名不一致会导致错误的函数调用
     for (auto i = 0; i < len; i++) {
-      if (srv[i] != services[i]) {
+      if (newsrvs[i] != services[i]) {
         b.close();
         return false;
       }
@@ -124,17 +109,18 @@ public:
     }
   }
 
-  static QString getProgramName(IWingToolPlg *plg, ToolStructInfo &info) {
-    return info.isPlugin
-               ? info.process + " | " + plg->pluginServices()[info.serviceID]
-               : QFileInfo(info.process).fileName();
+  static QString getProgramName(const QStringList &services,
+                                ToolStructInfo &info) {
+    return info.isPlugin ? info.process + " | " + services[info.serviceID]
+                         : QFileInfo(info.process).fileName();
   }
 
-  static QString getToolTipContent(IWingToolPlg *plg, ToolStructInfo &info) {
+  static QString getToolTipContent(const QStringList &services,
+                                   ToolStructInfo &info) {
     if (info.isPlugin) {
       return QObject::tr("Process:%1\nService:%2\nParams:%3")
           .arg(info.process)
-          .arg(plg->pluginServices()[info.serviceID])
+          .arg(services[info.serviceID])
           .arg(info.params);
     } else {
       return QObject::tr("Process:%1\nParams:%2")
@@ -143,22 +129,24 @@ public:
     }
   }
 
-  static void addPluginServiceNames(QComboBox *combox, IWingToolPlg *plg) {
-    auto c = plg->pluginServices().count();
-    auto cn = plg->pluginServiceNames().count();
-    if (c == cn)
-      combox->addItems(plg->pluginServiceNames());
-    else
-      combox->addItems(plg->pluginServices());
-  }
-
-  static QString getPluginServiceName(IWingToolPlg *plg, int index) {
-    auto c = plg->pluginServices().count();
-    auto cn = plg->pluginServiceNames().count();
-    if (c == cn)
-      return plg->pluginServiceNames()[index];
-    else
-      return plg->pluginServices()[index];
+  static QStringList parseCmdParams(QString str) {
+    static QRegularExpression regex("(\"[^\"]+\"|[^\\s\"]+)");
+    QStringList args;
+    int off = 0;
+    while (true) {
+      auto match = regex.match(str, off);
+      if (!match.hasMatch()) {
+        break;
+      }
+      auto res = match.captured();
+      if (res[0] == '\"')
+        res = res.replace("\"", "");
+      if (res[0] == '\'')
+        res = res.replace("'", "");
+      args << res;
+      off = match.capturedEnd();
+    }
+    return args;
   }
 };
 

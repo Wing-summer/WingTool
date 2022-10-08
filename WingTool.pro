@@ -26,7 +26,8 @@ SOURCES += \
     dialog/pluginseldialog.cpp \
     dialog/tooleditdialog.cpp \
     class/hotkey.cpp \
-    dialog/toolswapdialog.cpp
+    dialog/toolswapdialog.cpp \
+    dialog/rundialog.cpp
 RESOURCES +=         resources.qrc
 
 HEADERS += \
@@ -47,7 +48,8 @@ HEADERS += \
     utilities.h \
     dialog/tooleditdialog.h \
     class/hotkey.h \
-    dialog/toolswapdialog.h
+    dialog/toolswapdialog.h \
+    dialog/rundialog.h
 
 
 TRANSLATIONS += \

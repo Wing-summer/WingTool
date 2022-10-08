@@ -1,9 +1,11 @@
 #ifndef IWINGTOOLPLG_H
 #define IWINGTOOLPLG_H
 
+#include <QApplication>
 #include <QIcon>
 #include <QKeySequence>
 #include <QObject>
+#include <QPointer>
 #include <QUuid>
 #include <QVariant>
 
@@ -16,6 +18,12 @@
 
 #define LoadingPluginMsg QVariant::fromValue('l')
 #define LoadedPluginMsg QVariant::fromValue('L')
+
+#ifndef Q_MOC_RUN
+#define PLUGINSRV
+#endif
+
+#define PLUGINSRVTAG "PLUGINSRV"
 
 /*=================================*/
 
@@ -48,7 +56,7 @@ enum class RemoteCallError {
   Unkown,          // 回调未知错误，通常由于未处理异常导致
   PluginNotFound,  // 找不到的插件
   ServiceNotFound, // 找到插件，但没有找到对应的服务
-  ArgsCount,       // 调用远程函数的参数不足
+  ArgError         // 调用的参数出现问题
 };
 Q_DECLARE_METATYPE(RemoteCallError)
 
@@ -94,8 +102,6 @@ public:
   virtual void unload() = 0;
   // 插件的名称，可以使用 tr 实现多语言
   virtual QString pluginName() = 0;
-  // 插件提供者，作为插件的唯一标识，一定不要使用 tr 函数
-  virtual QString provider() = 0;
   // 插件作者
   virtual QString pluginAuthor() = 0;
   // 插件类别，目前还没啥特定的作用，以后发掘
@@ -106,15 +112,12 @@ public:
   virtual QString pluginComment() = 0;
   // 插件图标，我建议必须有一个，否则后面不好识别
   virtual QIcon pluginIcon() = 0;
-  // 插件服务，一定不要使用 tr 函数
-  virtual QStringList pluginServices() = 0;
-  // 插件服务名，如果交给 UI 显示的话就会调用这个显示
-  // 所以这个可以实现多语言，降低工具使用语言门槛
-  // 如果为空或者数量不一致，则将插件服务作为名称显示
-  virtual QStringList pluginServiceNames() { return QStringList(); }
+  // 插件服务类，必须继承 QObject ，自定义
+  virtual const QMetaObject *serviceMeta() = 0;
+  // 插件指针
+  virtual const QPointer<QObject> serviceHandler() = 0;
   // 插件订阅，如果需要跟踪鼠标就需要订阅
   virtual HookIndex getHookSubscribe() { return HookIndex::None; }
-
   // 指示是否作为工具，如果 false，则不在工具选择中显示
   // 但这不意味着不在插件列表显示
   virtual bool isTool() { return true; }
@@ -136,7 +139,7 @@ signals:
   // 跨插件函数远程调用，其中 puid 为插件的唯一标识，
   // callback 为回调函数名称， params 为远程调用的参数
   RemoteCallError remoteCall(const QString provider, const QString callback,
-                             QList<QVariant> params);
+                             QVector<QVariant> params);
 
 public slots:
   // 宿主开始回调函数时候使用，第一个参数是函数服务索引，第二个是参数集合

@@ -11,6 +11,7 @@ SettingManager::SettingManager(QObject *parent)
       m_toolGridSize(TOOLGRIDSIZE),
       m_toolBox(
           QKeySequence(Qt::KeyboardModifier::ShiftModifier | Qt::Key_Space)),
+      m_runWin(QKeySequence(Qt::KeyboardModifier::MetaModifier | Qt::Key_R)),
       m_toolwinMod(Qt::KeyboardModifier::ControlModifier),
       m_toolMouse(Qt::MouseButton::MidButton), ismod(false), loaded(false) {
 
@@ -47,6 +48,7 @@ bool SettingManager::loadSettings(QString filename) {
     stream.readRawData(buffer, 8);
     if (memcmp(header, buffer, 8)) {
       // 如果文件头不对劲，就视为非法配置
+      loadedGeneral();
       return false;
     }
 
@@ -56,6 +58,7 @@ bool SettingManager::loadSettings(QString filename) {
 
     if (ver != CONFIGVER) {
       f.close();
+      loadedGeneral();
       return false;
     }
 
@@ -107,7 +110,9 @@ bool SettingManager::loadSettings(QString filename) {
         if (pi < 0)
           continue;
         // 检查兼容性，不兼容出门左拐
-        if (!Utilities::isPluginCompatible(plgsys->plugin(pi), arr)) {
+        auto plg = plgsys->plugin(pi);
+        if (!Utilities::isPluginCompatible(plg, plgsys->pluginServiceNames(plg),
+                                           arr)) {
           continue;
         }
         // 经历过重重检验，合格入库
@@ -159,7 +164,9 @@ bool SettingManager::loadSettings(QString filename) {
         if (pi < 0)
           continue;
         // 检查兼容性，不兼容出门左拐
-        if (!Utilities::isPluginCompatible(plgsys->plugin(pi), arr)) {
+        auto plg = plgsys->plugin(pi);
+        if (!Utilities::isPluginCompatible(plg, plgsys->pluginServiceNames(plg),
+                                           arr)) {
           continue;
         }
         // 经历过重重检验，合格入库
@@ -209,7 +216,9 @@ bool SettingManager::loadSettings(QString filename) {
         if (pi < 0)
           continue;
         // 检查兼容性，不兼容出门左拐
-        if (!Utilities::isPluginCompatible(plgsys->plugin(pi), arr)) {
+        auto plg = plgsys->plugin(pi);
+        if (!Utilities::isPluginCompatible(plg, plgsys->pluginServiceNames(plg),
+                                           arr)) {
           continue;
         }
 
@@ -269,17 +278,18 @@ void SettingManager::resetSettings() {
   m_toolGridSize = TOOLGRIDSIZE;
 
   m_toolBox = QKeySequence(Qt::KeyboardModifier::ShiftModifier | Qt::Key_Space);
+  m_runWin = QKeySequence(Qt::KeyboardModifier::MetaModifier | Qt::Key_R);
   m_toolwinMod = Qt::KeyboardModifier::ControlModifier;
   m_toolMouse = Qt::MouseButton::MidButton;
   ismod = true;
 
-  // 更新 UI
   emit sigToolwinEnabledChanged(m_toolwin);
   emit sigWintoolEnabledChanged(m_wintool);
   emit sigToolGridSizeChanged(m_toolGridSize);
   emit sigToolBoxHotkeyChanged(m_toolBox);
   emit sigToolwinModChanged(m_toolwinMod);
   emit sigToolwinMouseBtnChanged(m_toolMouse);
+  emit sigRunWinHotkeyChanged(m_runWin);
 }
 
 void SettingManager::setModified() { ismod = true; }
@@ -332,4 +342,12 @@ void SettingManager::setWintoolEnabled(bool wintool) {
   m_wintool = wintool;
   ismod = true;
   emit sigWintoolEnabledChanged(wintool);
+}
+
+QKeySequence SettingManager::runWinHotkey() const { return m_runWin; }
+
+void SettingManager::setRunWinHotkey(const QKeySequence &runWin) {
+  m_runWin = runWin;
+  ismod = true;
+  emit sigRunWinHotkeyChanged(runWin);
 }

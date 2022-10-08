@@ -5,6 +5,7 @@
 
 #include "class/appmanager.h"
 #include "control/pluginselector.h"
+#include "plugin/pluginsystem.h"
 #include <DCheckBox>
 #include <DComboBox>
 #include <DDialog>
@@ -32,6 +33,7 @@ protected:
 
 private:
   AppManager *manager;
+  PluginSystem *plgsys;
   ToolStructInfo res;
 
   PluginSelector *ps;

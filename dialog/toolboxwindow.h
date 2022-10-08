@@ -15,8 +15,9 @@ public:
   explicit ToolBoxWindow(DMainWindow *parent = nullptr);
 
 public:
-  void addItem(ToolStructInfo &info, int index = -1); // -1 表示追加
-  void rmItem(int index);                             // -1 表示清空
+  void addItem(ToolStructInfo &info, QString service,
+               int index = -1); // -1 表示追加
+  void rmItem(int index);       // -1 表示清空
   void mvItem(int from, int to);
 
 private:
@@ -31,6 +32,7 @@ signals:
 
 private:
   DListWidget *lstool;
+
   int itemheight;
 };
 

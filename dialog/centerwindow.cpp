@@ -1,4 +1,5 @@
 #include "centerwindow.h"
+#include "rundialog.h"
 #include "shortcuteditdialog.h"
 #include "tooleditdialog.h"
 #include "toolswapdialog.h"
@@ -39,6 +40,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   // General
   auto w = new QWidget(this);
   auto scview = new QScrollArea;
+  scview->setWidgetResizable(true);
   scview->setWidget(w);
   auto vlayout = new QVBoxLayout(w);
   vlayout->setMargin(20);
@@ -77,6 +79,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   gw = new QWidget(w);
   vlayout->addWidget(gw);
   auto flayout = new QFormLayout(gw);
+  kseqRun = new DKeySequenceEdit(gw);
+  flayout->addRow(tr("RunWin:"), kseqRun);
   kseqTool = new DKeySequenceEdit(gw);
   flayout->addRow(tr("ToolBox:"), kseqTool);
   hlayout = new QHBoxLayout(gw);
@@ -117,6 +121,17 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   vlayout->addWidget(group);
 
   vlayout->addSpacing(10);
+  l = new DLabel(tr("Log"), this);
+  l->setFont(font);
+  vlayout->addWidget(l);
+  vlayout->addSpacing(5);
+  auto btnlog = new DPushButton(tr("OpenLog"), w);
+  connect(btnlog, &DPushButton::clicked, this, [=] {
+    QDesktopServices::openUrl(QUrl(DLogManager::getlogFilePath()));
+  });
+  vlayout->addWidget(btnlog);
+
+  vlayout->addSpacing(10);
   l = new DLabel(tr("Software"), this);
   l->setFont(font);
   vlayout->addWidget(l);
@@ -128,7 +143,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
                                 this));
 
   vlayout->addStretch();
-  tabs->addTab(w, tr("General"));
+  tabs->addTab(scview, tr("General"));
 
   // Hotkeys
   w = new QWidget(this);
@@ -243,8 +258,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
             tbtoolinfo->setText(tr("[Plugin]"));
             tbtoolinfo->append(QObject::tr("PluginName:") + plg->pluginName());
-            tbtoolinfo->append(tr("Service:") + Utilities::getPluginServiceName(
-                                                    plg, info.serviceID));
+            tbtoolinfo->append(tr("Service:") + plgsys->pluginServicetrNames(
+                                                    plg)[info.serviceID]);
             tbtoolinfo->append(tr("Params:") + info.params);
 
             auto fw = tbtoolinfo->fontMetrics().horizontalAdvance('=');
@@ -256,7 +271,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
                                QString::number(plg->pluginVersion()));
             tbtoolinfo->append(QObject::tr("Author:") + plg->pluginAuthor());
             tbtoolinfo->append(QObject::tr("Comment:") + plg->pluginComment());
-            tbtoolinfo->append(QObject::tr("Provider:") + plg->provider());
+            tbtoolinfo->append(QObject::tr("Provider:") +
+                               plgsys->pluginProvider(plg));
           } else {
             tbtoolinfo->setText(tr("NoTool"));
           }
@@ -524,22 +540,17 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
                       QString::number(plg->pluginVersion()));
     tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
     tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
-    tbplginfo->append(QObject::tr("Provider:") + plg->provider());
+    tbplginfo->append(QObject::tr("Provider:") + plgsys->pluginProvider(plg));
 
     tbplginfo->append(QObject::tr("Services:"));
 
-    auto c = plg->pluginServices();
-    auto cn = plg->pluginServiceNames();
-    if (c.count() == cn.count()) {
-      for (int i = 0; i < c.count(); i++) {
-        tbplginfo->append(
-            QString("\t%1 : %2 ( %3 )").arg(i).arg(cn[i]).arg(c[i]));
-      }
-    } else {
-      int i = 0;
-      for (auto &item : plg->pluginServices()) {
-        tbplginfo->append(QString("\t%1 : %2").arg(i++).arg(item));
-      }
+    auto &srvtr = plgsys->pluginServicetrNames(plg);
+    auto &srv = plgsys->pluginServiceNames(plg);
+
+    auto len = srv.count();
+    for (auto i = 0; i < len; i++) {
+      tbplginfo->append(
+          QString("\t%1 : %2 ( %3 )").arg(i).arg(srvtr[i]).arg(srv[i]));
     }
 
     tbplginfo->append(tr("RegisteredHotkey:"));
@@ -588,32 +599,12 @@ void CenterWindow::show(CenterWindow::TabPage index) {
   DMainWindow::show();
 }
 
-QStringList CenterWindow::parseCmdParams(QString str) {
-  static QRegularExpression regex("(\"[^\"]+\"|[^\\s\"]+)");
-  QStringList args;
-  int off = 0;
-  while (true) {
-    auto match = regex.match(str, off);
-    if (!match.hasMatch()) {
-      break;
-    }
-    auto res = match.captured();
-    if (res[0] == '\"')
-      res = res.replace("\"", "");
-    if (res[0] == '\'')
-      res = res.replace("'", "");
-    args << res;
-    off = match.capturedEnd();
-  }
-  return args;
-}
-
 bool CenterWindow::runTask(ToolStructInfo record) {
   if (!record.enabled)
     return true;
   if (record.isPlugin) {
-    auto params = parseCmdParams(record.params);
-    QList<QVariant> ps;
+    auto params = Utilities::parseCmdParams(record.params);
+    QVector<QVariant> ps;
     for (auto &item : params) {
       ps.append(item);
     }
@@ -629,7 +620,7 @@ bool CenterWindow::runTask(ToolStructInfo record) {
   auto mt = db.mimeTypeForFile(absp);
   auto n = mt.name();
   if (n == "application/x-executable") {
-    if (!pstart.startDetached(absp, parseCmdParams(record.params))) {
+    if (!pstart.startDetached(absp, Utilities::parseCmdParams(record.params))) {
       DMessageBox::critical(this, tr("runErr"), pstart.errorString());
       return false;
     }
@@ -756,7 +747,7 @@ void CenterWindow::on_editWinTool() {
     auto item = lstoolwin->item(index);
     auto plg = plgsys->plugin(res.pluginIndex);
     item->setIcon(Utilities::trimIconFromInfo(plg, res));
-    item->setText(Utilities::getProgramName(plg, res));
+    // item->setText(Utilities::getProgramName(plg, res));
     item->setToolTip(res.process);
     sm->setModified();
   }
@@ -801,19 +792,21 @@ void CenterWindow::on_addWinTool() {
     if (index < 0) {
       wintoolinfos.append(res);
       auto plg = plgsys->plugin(res.pluginIndex);
+      auto &srvs = plgsys->pluginServiceNames(plg);
       auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, res),
-                                      Utilities::getProgramName(plg, res));
-      item->setToolTip(Utilities::getToolTipContent(plg, res));
+                                      Utilities::getProgramName(srvs, res));
+      item->setToolTip(Utilities::getToolTipContent(srvs, res));
       lstoolwin->addItem(item);
-      wintool.addItem(res);
+      wintool.addItem(res, srvs[res.serviceID]);
     } else {
       wintoolinfos.insert(index + 1, res);
       auto plg = plgsys->plugin(res.pluginIndex);
+      auto &srvs = plgsys->pluginServiceNames(plg);
       auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, res),
-                                      Utilities::getProgramName(plg, res));
-      item->setToolTip(Utilities::getToolTipContent(plg, res));
+                                      Utilities::getProgramName(srvs, res));
+      item->setToolTip(Utilities::getToolTipContent(srvs, res));
       lstoolwin->insertItem(index + 1, item);
-      wintool.addItem(res, index + 1);
+      wintool.addItem(res, srvs[res.serviceID], index + 1);
     }
     sm->setModified();
   }
@@ -917,6 +910,13 @@ void CenterWindow::on_importSettings() {
 
 void CenterWindow::on_resetSettings() { sm->resetSettings(); }
 
+void CenterWindow::on_runplg() {
+  RunDialog d;
+  if (d.exec()) {
+  } else {
+  }
+}
+
 void CenterWindow::addHotKeyInfo(ToolStructInfo &info) {
   // 添加 UI 项目
   auto index = tbhotkeys->rowCount();
@@ -955,16 +955,16 @@ void CenterWindow::setToolFinished() { lbls[0]->setChecked(true); }
 void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
   wintoolinfos.append(info);
   auto plg = plgsys->plugin(info.pluginIndex);
+  auto &srvs = plgsys->pluginServiceNames(plg);
   auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, info),
-                                  Utilities::getProgramName(plg, info));
-  item->setToolTip(Utilities::getToolTipContent(plg, info));
+                                  Utilities::getProgramName(srvs, info));
+  item->setToolTip(Utilities::getToolTipContent(srvs, info));
   lstoolwin->addItem(item);
-  wintool.addItem(info);
+  wintool.addItem(info, srvs[info.serviceID]);
 }
 
 void CenterWindow::initGeneralSettings() {
   sm = SettingManager::instance();
-
   // 注册有关设置更改相关信号
   cbWinTool->setChecked(sm->wintoolEnabled());
   cbToolWin->setChecked(sm->toolwinEnabled());
@@ -984,7 +984,11 @@ void CenterWindow::initGeneralSettings() {
   sm->sigToolGridSizeChanged(sm->toolGridSize());
   connect(sbGridsize, QOverload<int>::of(&DSpinBox::valueChanged), sm,
           &SettingManager::setToolGridSize);
-  connect(tabs, &DTabWidget::currentChanged, this, [=] { sm->saveSettings(); });
+  connect(tabs, &DTabWidget::currentChanged, this, [=] {
+    sm->saveSettings();
+    if (tabs->currentIndex() == 2)
+      lbls[sellbl]->toggled(true);
+  });
 
   // WinTool 相关
   wintool.setModal(true);
@@ -997,14 +1001,27 @@ void CenterWindow::initGeneralSettings() {
   connect(hkwintool, &Hotkey::activated, this, [&] {
     Dtk::Widget::moveToCenter(&wintool);
     wintool.show();
-    Utilities::activeWindowFromDock(wintool.winId());
+    wintool.raise();
   });
+
+  seq = sm->runWinHotkey();
+  kseqRun->setKeySequence(seq);
+  hkrunwin = manager->registerHotkey(seq, false);
+  hkrunwin->disconnect();
+  connect(hkrunwin, &Hotkey::activated, this, &CenterWindow::on_runplg);
+
   connect(kseqTool, &DKeySequenceEdit::editingFinished, this,
           [=](const QKeySequence &keySequence) {
             sm->setToolBoxHotkey(keySequence);
           });
   connect(sm, &SettingManager::sigToolBoxHotkeyChanged, this,
           [=](const QKeySequence seq) { hkwintool->setShortcut(seq, true); });
+  connect(kseqRun, &DKeySequenceEdit::editingFinished, this,
+          [=](const QKeySequence &keySequence) {
+            sm->setRunWinHotkey(keySequence);
+          });
+  connect(sm, &SettingManager::sigRunWinHotkeyChanged, this,
+          [=](const QKeySequence seq) { hkrunwin->setShortcut(seq, true); });
 
   connect(sm, &SettingManager::sigToolwinEnabledChanged, this,
           [=](bool b) { cbToolWin->setChecked(b); });

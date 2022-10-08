@@ -2,6 +2,7 @@
 #include "utilities.h"
 #include <QCoreApplication>
 #include <QDir>
+#include <QMetaClassInfo>
 #include <QPluginLoader>
 
 PluginSystem *PluginSystem::m_instance = nullptr;
@@ -113,11 +114,7 @@ PluginSystem::PluginSystem(QObject *parent)
   m_instance = this;
 }
 
-PluginSystem::~PluginSystem() {
-  UnloadPlugin();
-  DLogManager::registerFileAppender();
-  DLogManager::registerConsoleAppender();
-}
+PluginSystem::~PluginSystem() { UnloadPlugin(); }
 
 bool PluginSystem::LoadPlugin() {
   QDir plugindir(QCoreApplication::applicationDirPath() + "/plugin");
@@ -167,29 +164,55 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           return;
         }
 
-        lp = LP::provider;
-        if (p->provider().isEmpty() || loadedProvider.contains(p->provider())) {
-          dError(tr("ErLoadPluginProvider"));
+        lp = LP::handler;
+        auto handler = p->serviceHandler();
+        if (handler.isNull()) {
+          dError(tr("ErrLoadPluginNoHandler"));
           loader.unload();
           return;
         }
 
-        lp = LP::service;
-        // 插件至少含有一种服务
-        auto service = p->pluginServices();
-        if (service.isEmpty()) {
-          dError(tr("ErLoadPluginService"));
+        lp = LP::provider;
+        auto meta = p->serviceMeta();
+        auto clsname = meta->className();
+        if (clsname == nullptr) {
+          dError(tr("ErrLoadPluginProvider"));
           loader.unload();
           return;
         }
-        // 禁止含有相同标识的服务名
-        for (auto &s : service) {
-          auto c = service.count(s);
-          if (c != 1) {
-            dError(tr("ErLoadPluginService"));
-            loader.unload();
-            return;
+
+        auto provider = QString::fromUtf8(clsname);
+        if (provider.isEmpty() || loadedProvider.contains(provider)) {
+          dError(tr("ErrLoadPluginProvider"));
+          loader.unload();
+          return;
+        }
+
+        // 筹备一个临时容器
+        PluginRecord record;
+
+        lp = LP::service;
+        // 插件至少含有一种有效服务
+        auto srvc = meta->methodCount();
+
+        QVector<const char *> tmpfunc;
+        // 暂时缓存一下原函数名称，供之后的函数名本地化之用
+
+        for (auto i = 0; i < srvc; i++) {
+          auto m = meta->method(i);
+          if (strcmp(PLUGINSRVTAG, m.tag())) {
+            continue;
           }
+          // 记录有效服务函数
+          record.services.append(m);
+          tmpfunc.append(m.name());
+          record.serviceNames.append(QString::fromUtf8(m.name()));
+        }
+
+        if (record.services.isEmpty()) {
+          dError(tr("ErLoadPluginService"));
+          loader.unload();
+          return;
         }
 
         // 检查完毕后，就可以进入真正的加载环节
@@ -203,8 +226,13 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           return;
         }
 
+        for (auto &item : tmpfunc) {
+          record.servicetrNames.append(
+              QCoreApplication::translate(clsname, item));
+        }
+
         WingPluginInfo info;
-        info.provider = p->provider();
+        info.provider = provider;
         info.pluginName = p->pluginName();
         info.pluginAuthor = p->pluginAuthor();
         info.pluginComment = p->pluginComment();
@@ -212,13 +240,14 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
 
         loadedplginfos << info;
         m_plgs << p;
-        loadedProvider << p->provider();
+        loadedProvider << provider;
         m_plgsMD5s << Utilities::getPUID(p);
 
         dWarning(tr("PluginInitRegister"));
 
         // 初始化插件容器
-        m_plghk.insert(p, QList<QUuid>());
+        record.provider = provider;
+        m_plgrec.insert(p, record);
 
         // 查询订阅
         auto sub = p->getHookSubscribe();
@@ -242,7 +271,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   auto hk = this->manager->registerHotkey(keyseq, false);
                   if (hk) {
                     auto uuid = QUuid::createUuid();
-                    m_plghk[sender] << uuid;
+                    m_plgrec[sender].hotkeyuid << uuid;
                     uhmap.insert(uuid, hk);
                     return uuid;
                   } else {
@@ -253,7 +282,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
           if (sender == nullptr)
             return false;
-          auto &plist = m_plghk[sender];
+          auto &plist = m_plgrec[sender].hotkeyuid;
           auto i = plist.indexOf(id);
           if (i >= 0) {
             plist.removeAt(i);
@@ -268,7 +297,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
                     return false;
-                  auto &plist = m_plghk[sender];
+                  auto &plist = m_plgrec[sender].hotkeyuid;
                   if (plist.contains(id)) {
                     return this->manager->enableHotKey(uhmap[id], enabled);
                   }
@@ -279,7 +308,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
                     return false;
-                  auto &plist = m_plghk[sender];
+                  auto &plist = m_plgrec[sender].hotkeyuid;
                   if (plist.contains(id)) {
                     return this->manager->editHotkey(uhmap[id], seq);
                   }
@@ -287,7 +316,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                 });
         connect(p, &IWingToolPlg::remoteCall, this,
                 [=](const QString provider, const QString callback,
-                    QList<QVariant> params) {
+                    QVector<QVariant> params) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr)
                     return RemoteCallError::Unkown;
@@ -297,23 +326,23 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                     return RemoteCallError::PluginNotFound;
 
                   auto plg = m_plgs[index];
-                  auto id = plg->pluginServices().indexOf(callback);
-                  if (id < 0)
-                    return RemoteCallError::ServiceNotFound;
 
-                  try {
-                    // 调用获取返回值
-                    auto res = emit plg->pluginServicePipe(id, params);
-                    // 将返回值以相同方式传送回去
-                    emit sender->pluginServicePipe(RemoteCallRes, {res});
-                    return RemoteCallError::Success;
-                  } catch (...) {
+                  QVariant ret;
+                  auto res = this->remoteCall(
+                      plg, const_cast<QString &>(callback), params, ret);
+                  if (res == 0) {
+                    return RemoteCallError::PluginNotFound;
+                  } else if (res < 0) {
                     return RemoteCallError::Unkown;
                   }
+
+                  // 将返回值以相同方式传送回去
+                  emit sender->pluginServicePipe(RemoteCallRes, {ret});
+
+                  return RemoteCallError::Success;
                 });
 
         emit p->pluginServicePipe(HostService, {LoadedPluginMsg});
-
       } else {
         dError(loader.errorString());
         loader.unload();
@@ -341,7 +370,7 @@ QList<QKeySequence> PluginSystem::pluginRegisteredHotkey(IWingToolPlg *plg) {
     return QList<QKeySequence>();
 
   QList<QKeySequence> keys;
-  auto plist = m_plghk[plg];
+  auto plist = m_plgrec[plg].hotkeyuid;
   for (auto &item : plist) {
     auto hk = uhmap[item];
     keys << hk->shortcut();
@@ -350,7 +379,7 @@ QList<QKeySequence> PluginSystem::pluginRegisteredHotkey(IWingToolPlg *plg) {
 }
 
 bool PluginSystem::pluginCall(QString provider, int serviceID,
-                              QList<QVariant> params) {
+                              QVector<QVariant> params) {
   if (serviceID < 0)
     return false;
 
@@ -358,8 +387,9 @@ bool PluginSystem::pluginCall(QString provider, int serviceID,
   if (i < 0)
     return false;
 
-  m_plgs[i]->pluginServicePipe(serviceID, params);
-  return true;
+  auto plg = m_plgs[i];
+  QVariant ret;
+  return remoteCall(plg, serviceID, params, ret) > 0;
 }
 
 QByteArray PluginSystem::pluginHash(int index) { return m_plgsMD5s[index]; }
@@ -368,13 +398,123 @@ int PluginSystem::pluginIndexByProvider(QString provider) {
   return loadedProvider.indexOf(provider);
 }
 
+const QStringList &PluginSystem::pluginServiceNames(IWingToolPlg *plg) {
+  if (m_plgs.contains(plg))
+    return m_plgrec[plg].serviceNames;
+  return emptystrlist;
+}
+
+const QStringList &PluginSystem::pluginServicetrNames(IWingToolPlg *plg) {
+  if (m_plgs.contains(plg))
+    return m_plgrec[plg].servicetrNames;
+  return emptystrlist;
+}
+
+QString PluginSystem::pluginProvider(IWingToolPlg *plg) {
+  if (m_plgs.contains(plg))
+    return m_plgrec[plg].provider;
+  return QString();
+}
+
 IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid, int &index) {
   for (auto plg : m_plgs) {
-    auto res = m_plghk[plg].indexOf(uuid);
+    auto res = m_plgrec[plg].hotkeyuid.indexOf(uuid);
     if (res >= 0) {
       index = res;
       return plg;
     }
   }
   return nullptr;
+}
+
+int PluginSystem::remoteCall(IWingToolPlg *plg, QString &callback,
+                             QVector<QVariant> params, QVariant &ret) {
+  // 开始查询有没有对应的函数
+  auto &srvn = m_plgrec[plg].serviceNames;
+  auto id = 0;
+  auto &srv = m_plgrec[plg].services;
+
+  for (;; id++) {
+    id = srvn.indexOf(callback, id);
+    if (id < 0)
+      break;
+
+    // 先检查一下参数个数
+    auto &m = srv[id];
+    if (params.count() != m.parameterCount()) {
+      continue;
+    }
+
+    // 检查类型是否合格
+    auto len = params.count();
+    bool invalid = false;
+    for (auto i = 0; i < len; i++) {
+      if (!params[i].canConvert(m.parameterType(i))) {
+        invalid = true;
+        break;
+      }
+    }
+    if (invalid)
+      continue;
+
+    return remoteCall(plg, id, params, ret);
+  }
+
+  return CALL_INVALID;
+}
+
+int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
+                             QVector<QVariant> params, QVariant &ret) {
+
+  auto caller = m_plgrec[plg].services[callID];
+
+  if (!caller.isValid()) {
+    dError(tr("[remoteCallVaildErr]") +
+           QString("%1 : %2")
+               .arg(m_plgrec[plg].provider)
+               .arg(QString::fromUtf8(caller.name())));
+    return CALL_INVALID;
+  }
+
+  try {
+
+#define RETURN(type, value)                                                    \
+  QGenericReturnArgument(QMetaType::typeName(type), static_cast<void *>(&value))
+#define ARG(type, value)                                                       \
+  QGenericArgument(QMetaType::typeName(type), static_cast<void *>(&value))
+
+    params.resize(10);
+
+    auto len = caller.parameterCount();
+    for (auto i = 0; i < len; i++) {
+      if (!params[i].convert(caller.parameterType(i))) {
+        dError(tr("[remoteCallArgErr]") +
+               QString("%1 : %2")
+                   .arg(m_plgrec[plg].provider)
+                   .arg(QString::fromUtf8(caller.name())));
+        return CALL_ARG_ERROR;
+      }
+    }
+
+    // 开始调用
+    caller.invoke(plg->serviceHandler(), Qt::ConnectionType::DirectConnection,
+                  RETURN(caller.returnType(), ret),
+                  ARG(caller.parameterType(0), params[0]),
+                  ARG(caller.parameterType(1), params[1]),
+                  ARG(caller.parameterType(2), params[2]),
+                  ARG(caller.parameterType(3), params[3]),
+                  ARG(caller.parameterType(4), params[4]),
+                  ARG(caller.parameterType(5), params[5]),
+                  ARG(caller.parameterType(6), params[6]),
+                  ARG(caller.parameterType(7), params[7]),
+                  ARG(caller.parameterType(8), params[8]),
+                  ARG(caller.parameterType(9), params[9]));
+
+    return CALL_SUCCESS;
+  } catch (...) {
+    dError(tr("[remoteCallEx]") + QString("%1 : %2")
+                                      .arg(m_plgrec[plg].provider)
+                                      .arg(QString::fromUtf8(caller.name())));
+    return CALL_EXCEPTION;
+  }
 }
