@@ -8,6 +8,8 @@ TEMPLATE = app
 QT += x11extras
 LIBS += -lX11 -lXext -lXtst
 
+CONFIG += exception
+
 SOURCES += \
         main.cpp \
     class/eventmonitor.cpp \

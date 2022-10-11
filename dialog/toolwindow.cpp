@@ -1,7 +1,9 @@
 #include "toolwindow.h"
 #include "class/settingmanager.h"
 #include "utilities.h"
+#include <QDebug>
 #include <QMouseEvent>
+#include <QToolTip>
 
 ToolWindow::ToolWindow(DDialog *parent) : DDialog(parent) {
 
@@ -22,12 +24,16 @@ ToolWindow::ToolWindow(DDialog *parent) : DDialog(parent) {
     auto lbl = new DIconButton(this);
     lbl->setFixedSize(gridsize - 2, gridsize - 2);
     lbl->setIconSize(QSize(gridsize / 2, gridsize / 2));
+    lbl->setEnabled(false);
     auto in = std::div(i, 3);
     mlayout->addWidget(lbl, in.quot, in.rem, Qt::AlignCenter);
     lbls[i] = lbl;
+    connect(lbl, &DIconButton::pressed, this,
+            [=] { QToolTip::showText(QCursor::pos(), lbl->toolTip()); });
   }
 
   lbls[4]->setIcon(ICONRES("close"));
+  lbls[4]->setEnabled(true);
 }
 
 void ToolWindow::loadSettings() {
@@ -44,38 +50,40 @@ void ToolWindow::loadSettings() {
   });
 }
 
-void ToolWindow::setIcons(QVector<QIcon> icons) {
-  for (int i = 0; i < icons.count(); i++) {
-    if (i < 4) {
-      lbls[i]->setIcon(icons[i]);
-    } else {
-      lbls[i + 1]->setIcon(icons[i]);
-    }
-  }
-}
-
-void ToolWindow::setIcon(int index, QIcon icon) {
+void ToolWindow::setIcon(int index, QIcon icon, QString tip) {
   // index 取值 0-8 ，但是索引 4 被保留不做处理，是正中间的按钮
   if (index < 0 || index >= 8)
     return;
-  lbls[index]->setIcon(icon);
+
+  auto lbl = lbls[index];
+  lbl->setIcon(icon);
+  lbl->setEnabled(!icon.isNull());
+  lbl->setToolTip(tip);
 }
 
 void ToolWindow::popup(QPoint pos) {
   this->move(pos.x() - gridtotal / 2, pos.y() - gridtotal / 2);
   show();
+  raise();
 }
 
 void ToolWindow::sendMousePosUpdated() {
+  bool found = false;
   for (int x = 0; x < 3; x++) {
     for (int y = 0; y < 3; y++) {
-      auto res =
-          mlayout->cellRect(x, y).contains(mapFromGlobal(QCursor::pos()));
+      auto pos = QCursor::pos();
+      auto res = mlayout->cellRect(x, y).contains(mapFromGlobal(pos));
+      auto lbl = lbls[x * 3 + y];
       if (res) {
         m_sel = QPoint(x, y);
+        lbl->pressed();
+        found = true;
       }
-      lbls[x * 3 + y]->setDown(res);
+      lbl->setDown(res);
     }
+  }
+  if (!found) {
+    m_sel = QPoint(1, 1);
   }
 }
 

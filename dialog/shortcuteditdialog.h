@@ -4,6 +4,7 @@
 #include "utilities.h"
 
 #include "class/appmanager.h"
+#include "class/settingmanager.h"
 #include "control/pluginselector.h"
 #include "plugin/pluginsystem.h"
 #include <DCheckBox>
@@ -34,6 +35,8 @@ protected:
 private:
   AppManager *manager;
   PluginSystem *plgsys;
+  SettingManager *sm;
+
   ToolStructInfo res;
 
   PluginSelector *ps;
@@ -41,9 +44,12 @@ private:
   DFileChooserEdit *fcedit;
   DLineEdit *dledit;
   DKeySequenceEdit *ksedit;
+  DLineEdit *dlfkname;
 
   DLabel *lblp;
   DComboBox *cbService;
+
+  QString lastusedpath;
 };
 
 #endif // SHORTCUTEDITDIALOG_H

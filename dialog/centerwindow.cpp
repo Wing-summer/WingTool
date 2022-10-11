@@ -176,6 +176,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
       {tr("Enable"), tr("HotKey"), tr("Exec"), tr("Params")});
   tbhotkeys->setCornerButtonEnabled(true);
   tbhotkeys->horizontalHeader()->setStretchLastSection(true);
+  tbhotkeys->setFocusPolicy(Qt::StrongFocus);
 
   auto *menu = new DMenu(tbhotkeys);
   QAction *a;
@@ -258,6 +259,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
             tbtoolinfo->setText(tr("[Plugin]"));
             tbtoolinfo->append(QObject::tr("PluginName:") + plg->pluginName());
+            tbtoolinfo->append(tr("FakeName:") + info.fakename);
             tbtoolinfo->append(tr("Service:") + plgsys->pluginServicetrNames(
                                                     plg)[info.serviceID]);
             tbtoolinfo->append(tr("Params:") + info.params);
@@ -279,6 +281,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
         } else {
           if (info.enabled) {
             tbtoolinfo->setText(tr("[File]"));
+            tbtoolinfo->append(tr("FakeName:") + info.fakename);
             tbtoolinfo->append(tr("FileName:") + info.process);
             tbtoolinfo->append(tr("Params:") + info.params);
           } else {
@@ -334,8 +337,8 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
       lbls[sellbl]->setIcon(icon2);
       lbls[res]->setIcon(icon1);
 
-      manager->setToolIcon(sellbl, icon2);
-      manager->setToolIcon(res, icon1);
+      manager->setToolIcon(sellbl, icon2, toolinfos[sellbl].fakename);
+      manager->setToolIcon(res, icon1, toolinfos[res].fakename);
       lbls[res]->setChecked(true);
     }
   });
@@ -345,10 +348,10 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   b->setIconSize(QSize(20, 20));
   b->setToolTip(tr("Delete"));
   connect(b, &DButtonBoxButton::clicked, this, [=] {
-    toolinfos[sellbl].enabled = false;
+    toolinfos[sellbl] = ToolStructInfo();
     auto ilbl = lbls[sellbl];
     ilbl->setIcon(QIcon());
-    manager->setToolIcon(sellbl, QIcon());
+    manager->setToolIcon(sellbl, QIcon(), "");
     emit ilbl->toggled(true);
   });
   blist.append(b);
@@ -589,13 +592,14 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
 
   l = new DLabel(this);
   l->setPixmap(QPixmap(":/sponsor.png"));
-  l->setScaledContents(true);
-  slayout->addWidget(l);
+  slayout->addWidget(l, 0, Qt::AlignCenter);
   tabs->addTab(w, tr("Sponsor"));
 }
 
 void CenterWindow::show(CenterWindow::TabPage index) {
-  tabs->setCurrentIndex(int(index));
+  auto i = int(index);
+  if (i >= 0)
+    tabs->setCurrentIndex(i);
   DMainWindow::show();
 }
 
@@ -612,22 +616,34 @@ bool CenterWindow::runTask(ToolStructInfo record) {
     return true;
   }
 
-  QMimeDatabase db;
-
   QFileInfo info(record.process);
   auto absp = info.absoluteFilePath();
-
-  auto mt = db.mimeTypeForFile(absp);
-  auto n = mt.name();
-  if (n == "application/x-executable") {
+  if (info.isExecutable()) {
     if (!pstart.startDetached(absp, Utilities::parseCmdParams(record.params))) {
       DMessageBox::critical(this, tr("runErr"), pstart.errorString());
       return false;
     }
   } else {
-    if (!QDesktopServices::openUrl(QUrl("file://" + absp))) {
-      DMessageBox::critical(this, tr("err"), tr("openErr"));
-      return false;
+    if (record.params.count()) {
+      auto params = Utilities::parseCmdParams(record.params);
+      params.prepend("-c");
+      QString inter;
+      if (QFile::exists("/usr/bin/bash")) {
+        inter = "/usr/bin/bash";
+      } else {
+        if (QFile::exists("/bin/sh")) {
+          inter = "/bin/sh";
+        }
+      }
+      if (inter.isEmpty() || !pstart.startDetached(inter, params)) {
+        DMessageBox::critical(this, tr("runErr"), pstart.errorString());
+        return false;
+      }
+    } else {
+      if (!QDesktopServices::openUrl(QUrl("file://" + absp))) {
+        DMessageBox::critical(this, tr("err"), tr("openErr"));
+        return false;
+      }
     }
   }
   return true;
@@ -645,8 +661,10 @@ void CenterWindow::editTask(int index) {
     wt->setCheckState(res.enabled ? Qt::Checked : Qt::Unchecked);
     tbhotkeys->setItem(index, 0, wt);
     tbhotkeys->setItem(index, 1, new QTableWidgetItem(res.seq.toString()));
-    wt = new QTableWidgetItem(QString(res.process));
-    wt->setToolTip(res.process);
+    auto plg = plgsys->plugin(res.pluginIndex);
+    auto &srvs = plgsys->pluginServicetrNames(plg);
+    wt = new QTableWidgetItem(Utilities::getProgramName(srvs, res));
+    wt->setToolTip(Utilities::getToolTipContent(srvs, res));
     tbhotkeys->setItem(index, 2, wt);
     wt = new QTableWidgetItem(res.params);
     wt->setToolTip(res.params);
@@ -714,8 +732,10 @@ void CenterWindow::on_addHotkey() {
     wt->setCheckState(res.enabled ? Qt::Checked : Qt::Unchecked);
     tbhotkeys->setItem(index, 0, wt);
     tbhotkeys->setItem(index, 1, new QTableWidgetItem(res.seq.toString()));
-    wt = new QTableWidgetItem(res.process);
-    wt->setToolTip(res.process);
+    auto plg = plgsys->plugin(res.pluginIndex);
+    auto &srvs = plgsys->pluginServicetrNames(plg);
+    wt = new QTableWidgetItem(Utilities::getProgramName(srvs, res));
+    wt->setToolTip(Utilities::getToolTipContent(srvs, res));
     tbhotkeys->setItem(index, 2, wt);
     wt = new QTableWidgetItem(res.params);
     wt->setToolTip(res.params);
@@ -747,8 +767,9 @@ void CenterWindow::on_editWinTool() {
     auto item = lstoolwin->item(index);
     auto plg = plgsys->plugin(res.pluginIndex);
     item->setIcon(Utilities::trimIconFromInfo(plg, res));
-    // item->setText(Utilities::getProgramName(plg, res));
-    item->setToolTip(res.process);
+    auto &srvs = plgsys->pluginServicetrNames(plg);
+    item->setText(Utilities::getProgramName(srvs, res));
+    item->setToolTip(Utilities::getToolTipContent(srvs, res));
     sm->setModified();
   }
 }
@@ -792,12 +813,12 @@ void CenterWindow::on_addWinTool() {
     if (index < 0) {
       wintoolinfos.append(res);
       auto plg = plgsys->plugin(res.pluginIndex);
-      auto &srvs = plgsys->pluginServiceNames(plg);
+      auto &srvs = plgsys->pluginServicetrNames(plg);
       auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, res),
                                       Utilities::getProgramName(srvs, res));
       item->setToolTip(Utilities::getToolTipContent(srvs, res));
       lstoolwin->addItem(item);
-      wintool.addItem(res, srvs[res.serviceID]);
+      wintool.addItem(res, res.isPlugin ? srvs[res.serviceID] : QString());
     } else {
       wintoolinfos.insert(index + 1, res);
       auto plg = plgsys->plugin(res.pluginIndex);
@@ -806,7 +827,8 @@ void CenterWindow::on_addWinTool() {
                                       Utilities::getProgramName(srvs, res));
       item->setToolTip(Utilities::getToolTipContent(srvs, res));
       lstoolwin->insertItem(index + 1, item);
-      wintool.addItem(res, srvs[res.serviceID], index + 1);
+      wintool.addItem(res, res.isPlugin ? srvs[res.serviceID] : QString(),
+                      index + 1);
     }
     sm->setModified();
   }
@@ -908,7 +930,14 @@ void CenterWindow::on_importSettings() {
   }
 }
 
-void CenterWindow::on_resetSettings() { sm->resetSettings(); }
+void CenterWindow::on_resetSettings() {
+  if (DMessageBox::question(this, tr("Warn"), tr("ResetSettings")) ==
+      DMessageBox::No)
+    return;
+
+  sm->resetSettings();
+  sm->saveSettings();
+}
 
 void CenterWindow::on_runplg() {
   RunDialog d;
@@ -925,8 +954,10 @@ void CenterWindow::addHotKeyInfo(ToolStructInfo &info) {
   wt->setCheckState(info.enabled ? Qt::Checked : Qt::Unchecked);
   tbhotkeys->setItem(index, 0, wt);
   tbhotkeys->setItem(index, 1, new QTableWidgetItem(info.seq.toString()));
-  wt = new QTableWidgetItem(info.process);
-  wt->setToolTip(info.process);
+  auto plg = plgsys->plugin(info.pluginIndex);
+  auto &srvs = plgsys->pluginServicetrNames(plg);
+  wt = new QTableWidgetItem(Utilities::getProgramName(srvs, info));
+  wt->setToolTip(Utilities::getToolTipContent(srvs, info));
   tbhotkeys->setItem(index, 2, wt);
   wt = new QTableWidgetItem(info.params);
   wt->setToolTip(info.params);
@@ -947,7 +978,7 @@ void CenterWindow::setToolWinInfo(int index, ToolStructInfo &info) {
       Utilities::trimIconFromInfo(plgsys->plugin(info.pluginIndex), info);
   auto ilbl = lbls[index];
   ilbl->setIcon(icon);
-  manager->setToolIcon(index, icon);
+  manager->setToolIcon(index, icon, info.fakename);
 }
 
 void CenterWindow::setToolFinished() { lbls[0]->setChecked(true); }
@@ -955,12 +986,12 @@ void CenterWindow::setToolFinished() { lbls[0]->setChecked(true); }
 void CenterWindow::addWinToolInfo(ToolStructInfo &info) {
   wintoolinfos.append(info);
   auto plg = plgsys->plugin(info.pluginIndex);
-  auto &srvs = plgsys->pluginServiceNames(plg);
+  auto &srvs = plgsys->pluginServicetrNames(plg);
   auto item = new QListWidgetItem(Utilities::trimIconFromInfo(plg, info),
                                   Utilities::getProgramName(srvs, info));
   item->setToolTip(Utilities::getToolTipContent(srvs, info));
   lstoolwin->addItem(item);
-  wintool.addItem(info, srvs[info.serviceID]);
+  wintool.addItem(info, info.isPlugin ? srvs[info.serviceID] : QString());
 }
 
 void CenterWindow::initGeneralSettings() {
@@ -1001,6 +1032,7 @@ void CenterWindow::initGeneralSettings() {
   connect(hkwintool, &Hotkey::activated, this, [&] {
     Dtk::Widget::moveToCenter(&wintool);
     wintool.show();
+    wintool.activateWindow();
     wintool.raise();
   });
 
@@ -1151,7 +1183,8 @@ void CenterWindow::getConfig(QDataStream &f) {
   for (auto &p : scinfos) {
     f << p.enabled << p.isPlugin << p.seq;
     if (p.isPlugin) {
-      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8();
+      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
+        << p.fakename.toUtf8();
       auto i = plgindices.indexOf(p.pluginIndex);
       if (i >= 0) {
         f << true << i;
@@ -1159,8 +1192,8 @@ void CenterWindow::getConfig(QDataStream &f) {
         f << false << plgsys->pluginHash(p.pluginIndex);
       }
     } else {
-      f << p.process.toUtf8()
-        << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
+      f << p.process.toUtf8() << p.params.toUtf8()
+        << p.fakename.toUtf8(); // 如果是打开文件就没这么多事情了
     }
   }
 
@@ -1174,7 +1207,8 @@ void CenterWindow::getConfig(QDataStream &f) {
     if (p.enabled) {
       f << p.isPlugin;
       if (p.isPlugin) {
-        f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8();
+        f << p.serviceID << p.iconpath.toUtf8() << p.provider.toUtf8()
+          << p.params.toUtf8() << p.fakename.toUtf8();
         auto i = plgindices.indexOf(p.pluginIndex);
         if (i >= 0) {
           f << true << i;
@@ -1182,8 +1216,8 @@ void CenterWindow::getConfig(QDataStream &f) {
           f << false << plgsys->pluginHash(p.pluginIndex);
         }
       } else {
-        f << p.process.toUtf8()
-          << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
+        f << p.process.toUtf8() << p.params.toUtf8() << p.fakename.toUtf8()
+          << p.iconpath.toUtf8(); // 如果是打开文件就没这么多事情了
       }
     }
   }
@@ -1195,7 +1229,8 @@ void CenterWindow::getConfig(QDataStream &f) {
     // 只存储相关基础信息就可以了
     f << p.isPlugin;
     if (p.isPlugin) {
-      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8();
+      f << p.serviceID << p.iconpath.toUtf8() << p.provider.toUtf8()
+        << p.params.toUtf8() << p.fakename.toUtf8();
       auto i = plgindices.indexOf(p.pluginIndex);
       if (i >= 0) {
         f << true << i;
@@ -1203,8 +1238,8 @@ void CenterWindow::getConfig(QDataStream &f) {
         f << false << plgsys->pluginHash(p.pluginIndex);
       }
     } else {
-      f << p.process.toUtf8()
-        << p.params.toUtf8(); // 如果是打开文件就没这么多事情了
+      f << p.process.toUtf8() << p.params.toUtf8() << p.fakename.toUtf8()
+        << p.iconpath.toUtf8(); // 如果是打开文件就没这么多事情了
     }
   }
 
@@ -1218,7 +1253,7 @@ void CenterWindow::resetConfig() {
     QIcon icon;
     auto ilbl = lbls[i];
     ilbl->setIcon(icon);
-    manager->setToolIcon(i, icon);
+    manager->setToolIcon(i, icon, toolinfo.fakename);
   }
   lstoolwin->clear();
   wintoolinfos.clear();

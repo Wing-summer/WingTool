@@ -7,8 +7,8 @@
 
 PluginSystem *PluginSystem::m_instance = nullptr;
 
-PluginSystem::PluginSystem(QObject *parent)
-    : QObject(parent), manager(AppManager::instance()) {
+PluginSystem::PluginSystem(QMenu *systray, QObject *parent)
+    : QObject(parent), manager(AppManager::instance()), traymenu(systray) {
 
   // init plugin dispathcer
 #define InitDispathcer(hookindex)                                              \
@@ -135,8 +135,6 @@ void PluginSystem::UnloadPlugin() {}
 QList<IWingToolPlg *> PluginSystem::plugins() { return m_plgs; }
 
 void PluginSystem::loadPlugin(QFileInfo fileinfo) {
-  LP lp(LP::begin);
-
   if (fileinfo.exists()) {
     QPluginLoader loader(fileinfo.absoluteFilePath());
     QList<WingPluginInfo> loadedplginfos;
@@ -144,27 +142,24 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
 
     try {
       auto p = qobject_cast<IWingToolPlg *>(loader.instance());
+      dInfo(tr("PluginLoadingBegin : %1").arg(p->pluginName()));
       if (p) {
-        lp = LP::signature;
         if (p->signature() != WINGSUMMER) {
           dError(tr("ErrLoadPluginSign"));
           loader.unload();
           return;
         }
-        lp = LP::sdkVersion;
         if (p->sdkVersion() != SDKVERSION) {
           dError(tr("ErrLoadPluginSDKVersion"));
           loader.unload();
           return;
         }
-        lp = LP::pluginName;
         if (!p->pluginName().trimmed().length()) {
           dError(tr("ErrLoadPluginNoName"));
           loader.unload();
           return;
         }
 
-        lp = LP::handler;
         auto handler = p->serviceHandler();
         if (handler.isNull()) {
           dError(tr("ErrLoadPluginNoHandler"));
@@ -172,7 +167,6 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           return;
         }
 
-        lp = LP::provider;
         auto meta = p->serviceMeta();
         auto clsname = meta->className();
         if (clsname == nullptr) {
@@ -191,7 +185,6 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         // 筹备一个临时容器
         PluginRecord record;
 
-        lp = LP::service;
         // 插件至少含有一种有效服务
         auto srvc = meta->methodCount();
 
@@ -203,6 +196,13 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           if (strcmp(PLUGINSRVTAG, m.tag())) {
             continue;
           }
+
+          if (m.parameterCount() > 10) {
+            dError(tr("[InvaildPlgSrvArg]") +
+                   QString("%1/10").arg(m.parameterCount()));
+            continue;
+          }
+
           // 记录有效服务函数
           record.services.append(m);
           tmpfunc.append(m.name());
@@ -216,8 +216,6 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         }
 
         // 检查完毕后，就可以进入真正的加载环节
-
-        lp = LP::plugin2MessagePipe;
         emit p->pluginServicePipe(HostService, {LoadingPluginMsg});
 
         if (!p->init(loadedplginfos)) {
@@ -244,6 +242,25 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         m_plgsMD5s << Utilities::getPUID(p);
 
         dWarning(tr("PluginInitRegister"));
+
+        // 看看有没有要注册的托盘
+
+        auto menuobj = p->trayRegisteredMenu();
+        if (menuobj) {
+          auto menu = qobject_cast<QMenu *>(menuobj);
+          if (menu) {
+            traymenu->addMenu(menu);
+            plgmenuCount++;
+          } else {
+            auto amenu = qobject_cast<QAction *>(menuobj);
+            if (amenu) {
+              traymenu->addAction(amenu);
+              plgmenuCount++;
+            } else {
+              dError(tr("InvaildPlgMenu in loading %1").arg(p->pluginName()));
+            }
+          }
+        }
 
         // 初始化插件容器
         record.provider = provider;
@@ -343,13 +360,13 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                 });
 
         emit p->pluginServicePipe(HostService, {LoadedPluginMsg});
+        dInfo(tr("PluginLoaded : %1 %2").arg(p->pluginName()).arg(provider));
       } else {
         dError(loader.errorString());
         loader.unload();
       }
     } catch (...) {
-      auto m = QMetaEnum::fromType<LP>();
-      dError(QString(tr("ErrLoadPluginLoc") + m.valueToKey(int(lp))));
+      dError(tr("PluginLoadingEx"));
       loader.unload();
     }
   }
@@ -416,6 +433,8 @@ QString PluginSystem::pluginProvider(IWingToolPlg *plg) {
   return QString();
 }
 
+bool PluginSystem::hasRegisteredMenu() { return plgmenuCount > 0; }
+
 IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid, int &index) {
   for (auto plg : m_plgs) {
     auto res = m_plgrec[plg].hotkeyuid.indexOf(uuid);
@@ -475,6 +494,16 @@ int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
                .arg(QString::fromUtf8(caller.name())));
     return CALL_INVALID;
   }
+  auto len = caller.parameterCount();
+  if (params.count() < len) {
+    dError(tr("[remoteCallVaildErr]") +
+           QString("%1 : %2 [%3/%4]")
+               .arg(m_plgrec[plg].provider)
+               .arg(QString::fromUtf8(caller.name()))
+               .arg(params.count())
+               .arg(len));
+    return CALL_ARG_ERROR;
+  }
 
   try {
 
@@ -485,13 +514,15 @@ int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
 
     params.resize(10);
 
-    auto len = caller.parameterCount();
     for (auto i = 0; i < len; i++) {
       if (!params[i].convert(caller.parameterType(i))) {
         dError(tr("[remoteCallArgErr]") +
-               QString("%1 : %2")
+               QString("%1 : %2 [%3:%4|%5]")
                    .arg(m_plgrec[plg].provider)
-                   .arg(QString::fromUtf8(caller.name())));
+                   .arg(QString::fromUtf8(caller.name()))
+                   .arg(i)
+                   .arg(QMetaType::typeName(caller.parameterType(i)))
+                   .arg(params[i].typeName()));
         return CALL_ARG_ERROR;
       }
     }

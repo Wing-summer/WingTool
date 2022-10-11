@@ -21,6 +21,10 @@ public:
   bool saveSettings();
   bool exportSettings(QString filename);
   void resetSettings();
+  QString backupOrignSetting();
+
+  void saveFileDialogCurrent(QString path);
+  QString loadFileDialogCurrent();
 
 public:
   void setModified();

@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QIcon>
 #include <QKeySequence>
+#include <QMenu>
 #include <QObject>
 #include <QPointer>
 #include <QUuid>
@@ -121,6 +122,10 @@ public:
   // 指示是否作为工具，如果 false，则不在工具选择中显示
   // 但这不意味着不在插件列表显示
   virtual bool isTool() { return true; }
+  // 注册在程序右键托盘菜单，这个对于某些功能会十分方便
+  // 但非必要不要弄，因为这样的插件多了，反而麻烦了，一个插件仅有一项
+  // 类型仅支持 QMenu* 或者 QAction* 否则不载入
+  virtual QObject *trayRegisteredMenu() { return nullptr; }
 
 signals:
   // 注册热键，如果被占用则返回 -1 表示失败（通常是重复），

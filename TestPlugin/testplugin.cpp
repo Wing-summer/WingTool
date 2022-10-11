@@ -16,13 +16,17 @@ TestPlugin::TestPlugin(QObject *parent) {
   tbinfo->setFixedSize(dialog->size());
   tbinfo->setUndoRedoEnabled(false);
   services = new TestService(tbinfo, dialog);
+
+  testmenu = new QAction;
+  testmenu->setIcon(QIcon(":/TestPlugin/logo.svg"));
+  testmenu->setText("TestMenu");
 }
 
 int TestPlugin::sdkVersion() { return SDKVERSION; }
 
 QString TestPlugin::signature() { return WINGSUMMER; }
 
-TestPlugin::~TestPlugin() {}
+TestPlugin::~TestPlugin() { testmenu->deleteLater(); }
 
 bool TestPlugin::init(QList<WingPluginInfo> loadedplugin) {
   Q_UNUSED(loadedplugin);
@@ -62,6 +66,8 @@ const QPointer<QObject> TestPlugin::serviceHandler() {
 const QMetaObject *TestPlugin::serviceMeta() { return services->metaObject(); }
 
 HookIndex TestPlugin::getHookSubscribe() { return HookIndex::None; }
+
+QObject *TestPlugin::trayRegisteredMenu() { return testmenu; }
 
 QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
   switch (serviceID) {

@@ -7,6 +7,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+DWIDGET_USE_NAMESPACE
+
 ToolBoxWindow::ToolBoxWindow(DMainWindow *parent) : DDialog(parent) {
   setWindowTitle(tr("PleaseChoose"));
   setWindowFlag(Qt::Tool);
@@ -22,8 +24,9 @@ ToolBoxWindow::ToolBoxWindow(DMainWindow *parent) : DDialog(parent) {
                   : pe.base().color().lighter(125));
   lstool->setPalette(pe);
   lstool->setAlternatingRowColors(true);
-  itemheight = lstool->fontMetrics().lineSpacing() * 4;
+  itemheight = lstool->fontMetrics().lineSpacing() * 5;
   lstool->setMinimumHeight(itemheight * 5);
+  lstool->setFocusPolicy(Qt::StrongFocus);
   addContent(lstool);
 
   connect(DGuiApplicationHelper::instance(),
@@ -45,18 +48,19 @@ void ToolBoxWindow::addItem(ToolStructInfo &info, QString service, int index) {
   auto plg = plgsys->plugin(info.pluginIndex);
   auto icon = Utilities::trimIconFromInfo(plg, info);
   QString content =
-      tr("Process:") +
+      tr("FakeName:") + info.fakename + '\n' + tr("Process:") +
       (info.isPlugin ? info.process : QFileInfo(info.process).fileName()) +
       '\n';
 
   if (info.isPlugin)
-    content += (tr("Service:") + service);
+    content += (tr("Service:") + service + '\n');
   if (info.params.length())
-    content += ('\n' + tr("Params:") + info.params);
+    content += (tr("Params:") + info.params);
 
   auto pitem = new QListWidgetItem(icon, content);
   pitem->setTextAlignment(Qt::AlignCenter);
   pitem->setSizeHint(QSize(0, itemheight));
+  pitem->setToolTip(content);
 
   if (index < 0)
     lstool->addItem(pitem);

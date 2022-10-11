@@ -65,8 +65,8 @@ void EventMonitor::run() {
   isClicked = false;
 }
 
-Qt::KeyboardModifier EventMonitor::getKeyModifier() const {
-  return keyModifier;
+Qt::KeyboardModifiers EventMonitor::getKeyModifiers() const {
+  return keyModifiers;
 }
 
 void EventMonitor::callback(XPointer ptr, XRecordInterceptData *data) {
@@ -160,26 +160,45 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
       switch (code) {
       case 50:
       case 62:
-        keyModifier = Qt::ShiftModifier;
+        keyModifiers.setFlag(Qt::ShiftModifier);
         break;
       case 37:
       case 105:
-        keyModifier = Qt::ControlModifier;
+        keyModifiers.setFlag(Qt::ControlModifier);
         break;
       case 64:
       case 108:
-        keyModifier = Qt::AltModifier;
+        keyModifiers.setFlag(Qt::AltModifier);
         break;
       case 133:
-        keyModifier = Qt::MetaModifier;
+        keyModifiers.setFlag(Qt::MetaModifier);
         break;
       default:
         break;
       }
     } break;
-    case KeyRelease:
-      keyModifier = Qt::NoModifier;
-      break;
+    case KeyRelease: {
+      auto code = data->data[1];
+      switch (code) {
+      case 50:
+      case 62:
+        keyModifiers.setFlag(Qt::ShiftModifier, false);
+        break;
+      case 37:
+      case 105:
+        keyModifiers.setFlag(Qt::ControlModifier, false);
+        break;
+      case 64:
+      case 108:
+        keyModifiers.setFlag(Qt::AltModifier, false);
+        break;
+      case 133:
+        keyModifiers.setFlag(Qt::MetaModifier, false);
+        break;
+      default:
+        break;
+      }
+    } break;
     default:
       break;
     }

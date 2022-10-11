@@ -19,21 +19,7 @@ DCORE_USE_NAMESPACE
 class PluginSystem : public QObject {
   Q_OBJECT
 public:
-  enum class LP {
-    begin,
-    signature,
-    sdkVersion,
-    pluginName,
-    handler,
-    provider,
-    service,
-    plugin2MessagePipe,
-    init,
-  };
-  Q_ENUM(LP)
-
-public:
-  explicit PluginSystem(QObject *parent = nullptr);
+  explicit PluginSystem(QMenu *systray, QObject *parent = nullptr);
   ~PluginSystem();
 
   static PluginSystem *instance();
@@ -59,6 +45,8 @@ public:
   const QStringList &pluginServiceNames(IWingToolPlg *plg);
   const QStringList &pluginServicetrNames(IWingToolPlg *plg);
   QString pluginProvider(IWingToolPlg *plg);
+
+  bool hasRegisteredMenu();
 
 private:
   IWingToolPlg *loopUpHotkey(QUuid uuid, int &index);
@@ -93,6 +81,10 @@ private:
   QMap<HookIndex, QList<IWingToolPlg *>> dispatcher; // Hook 消息订阅
 
   QList<QByteArray> m_plgsMD5s; // 已加载的插件 HASH
+
+  QMenu *traymenu;
+
+  uint plgmenuCount = 0;
 };
 
 #endif // PLUGINSYSTEM_H

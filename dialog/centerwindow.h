@@ -26,6 +26,7 @@ class CenterWindow : public DMainWindow {
   Q_OBJECT
 public:
   enum class TabPage {
+    None = -1,
     General,
     Hotkeys,
     ToolBox,
@@ -39,7 +40,7 @@ public:
 public:
   CenterWindow(DMainWindow *parent = nullptr);
 
-  void show(TabPage index);
+  void show(TabPage index = TabPage::None);
 
 private:
   bool runTask(ToolStructInfo record);

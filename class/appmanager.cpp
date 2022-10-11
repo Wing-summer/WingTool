@@ -8,7 +8,7 @@ AppManager *AppManager::m_instance = nullptr;
 AppManager::AppManager(QObject *parent) : QObject(parent) {
   // 初始化全局鼠标监控
 
-#define CONNECT(sig) connect(&monitor, SIGNAL(sig), SLOT(sig));
+#define CONNECT(sig) connect(&monitor, SIGNAL(sig), this, SLOT(sig));
   CONNECT(clicked);
   CONNECT(doubleClicked);
   CONNECT(mouseWheel);
@@ -99,12 +99,10 @@ void AppManager::clearHotkey() {
   hotkeys.clear();
 }
 
-Qt::KeyboardModifier AppManager::getKeyModifier() const {
-  return monitor.getKeyModifier();
+Qt::KeyboardModifiers AppManager::getKeyModifiers() const {
+  return monitor.getKeyModifiers();
 }
 
-void AppManager::setToolIcons(QVector<QIcon> icons) { toolwin.setIcons(icons); }
-
-void AppManager::setToolIcon(int index, QIcon icon) {
-  toolwin.setIcon(index, icon);
+void AppManager::setToolIcon(int index, QIcon icon, QString tip) {
+  toolwin.setIcon(index, icon, tip);
 }

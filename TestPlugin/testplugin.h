@@ -62,6 +62,8 @@ public:
   const QPointer<QObject> serviceHandler() override;
   HookIndex getHookSubscribe() override;
 
+  QObject *trayRegisteredMenu() override;
+
 public slots:
   QVariant pluginServicePipe(int serviceID, QList<QVariant> params) override;
   virtual void onSetting() override;
@@ -73,6 +75,8 @@ private:
 
   TestService *services;
   QTranslator translator;
+
+  QAction *testmenu;
 };
 
 #endif // GENERICPLUGIN_H

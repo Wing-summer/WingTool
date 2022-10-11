@@ -6,12 +6,14 @@
 
 ShortCutEditDialog::ShortCutEditDialog(ToolStructInfo res, DMainWindow *parent)
     : DDialog(parent), manager(AppManager::instance()),
-      plgsys(PluginSystem::instance()) {
+      plgsys(PluginSystem::instance()), sm(SettingManager::instance()) {
 
   // 处于编辑状态直接堵塞所有相应（屏蔽鼠标追踪和热键触发以防干扰）
   manager->blockSignals(true);
 
   setWindowTitle(tr("HotkeyEdit"));
+
+  lastusedpath = sm->loadFileDialogCurrent();
 
   cb = new DCheckBox(tr("Enabled"), this);
   if (res.seq.isEmpty()) {
@@ -55,9 +57,15 @@ ShortCutEditDialog::ShortCutEditDialog(ToolStructInfo res, DMainWindow *parent)
   addContent(lblp);
   addSpacing(5);
   fcedit = new DFileChooserEdit(this);
+  fcedit->setDirectoryUrl(QUrl(lastusedpath));
   fcedit->initDialog();
   fcedit->setText(res.process);
   fcedit->setVisible(!res.isPlugin);
+  connect(fcedit, &DFileChooserEdit::fileChoosed, this,
+          [=](const QString &fileName) {
+            lastusedpath = QFileInfo(fileName).absoluteDir().absolutePath();
+            fcedit->setDirectoryUrl(QUrl(lastusedpath));
+          });
   addContent(fcedit);
 
   cbService = new DComboBox(this);
@@ -75,7 +83,12 @@ ShortCutEditDialog::ShortCutEditDialog(ToolStructInfo res, DMainWindow *parent)
   dledit = new DLineEdit(this);
   dledit->setText(res.params);
   addContent(dledit);
-
+  addSpacing(10);
+  addContent(new DLabel(tr("FakeName"), this));
+  addSpacing(5);
+  dlfkname = new DLineEdit(this);
+  dlfkname->setText(res.fakename);
+  addContent(dlfkname);
   addSpacing(20);
   auto dbbox = new DDialogButtonBox(
       DDialogButtonBox::Ok | DDialogButtonBox::Cancel, this);
@@ -110,7 +123,7 @@ void ShortCutEditDialog::on_accept() {
     res.provider = plgsys->pluginProvider(sel);
     res.pluginIndex = ps->getSelectedIndex();
   } else {
-    res.process = fcedit->text();
+    res.process = fcedit->text().trimmed();
     if (res.process.isEmpty()) {
       DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                                tr("NoProcessSet"));
@@ -118,7 +131,8 @@ void ShortCutEditDialog::on_accept() {
     }
   }
 
-  res.params = dledit->text();
+  res.fakename = dlfkname->text().trimmed();
+  res.params = dledit->text().trimmed();
 
   manager->blockSignals(false); // 恢复能力
   done(1);
@@ -131,6 +145,7 @@ void ShortCutEditDialog::on_reject() {
 
 void ShortCutEditDialog::closeEvent(QCloseEvent *event) {
   Q_UNUSED(event);
+  sm->saveFileDialogCurrent(lastusedpath);
   manager->blockSignals(false); // 恢复能力
   done(0);
 }

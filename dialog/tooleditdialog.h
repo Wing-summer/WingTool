@@ -4,11 +4,13 @@
 #include "utilities.h"
 
 #include "class/appmanager.h"
+#include "class/settingmanager.h"
 #include "control/pluginselector.h"
 #include <DCheckBox>
 #include <DComboBox>
 #include <DDialog>
 #include <DFileChooserEdit>
+#include <DIconButton>
 #include <DKeySequenceEdit>
 #include <DLabel>
 #include <DLineEdit>
@@ -27,20 +29,28 @@ private:
   void on_accept();
   void on_reject();
 
+  void refreshIcon();
+
 protected:
   void closeEvent(QCloseEvent *event) override;
 
 private:
   AppManager *manager;
   PluginSystem *plgsys;
+  SettingManager *sm;
   ToolStructInfo res;
 
   PluginSelector *ps;
   DFileChooserEdit *fcedit;
-  DLineEdit *dledit;
+  DFileChooserEdit *fcicon;
+  DLineEdit *dledit, *dlfkname;
 
   DLabel *lblp;
   DComboBox *cbService;
+  DIconButton *iconpre;
+
+  QString lastusedpath;
+  QIcon ficon, sicon;
 };
 
 #endif // TOOLWINEDITDIALOG_H

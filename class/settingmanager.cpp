@@ -31,6 +31,16 @@ SettingManager *SettingManager::instance() { return m_instance; }
 
 bool SettingManager::loadSettings(QString filename) {
 
+#define FAILRETURN                                                             \
+  {                                                                            \
+    f.close();                                                                 \
+    return false;                                                              \
+  }
+
+#define VAILDSTR(str)                                                          \
+  if (!Utilities::isVaildString(arr, str))                                     \
+    FAILRETURN;
+
 #define CORRECTINFO(info)                                                      \
   if (info.isPlugin) {                                                         \
     info.pluginIndex = plgsys->pluginIndexByProvider(info.provider);           \
@@ -49,7 +59,7 @@ bool SettingManager::loadSettings(QString filename) {
     if (memcmp(header, buffer, 8)) {
       // 如果文件头不对劲，就视为非法配置
       loadedGeneral();
-      return false;
+      FAILRETURN;
     }
 
     // 读取配置文件
@@ -57,9 +67,8 @@ bool SettingManager::loadSettings(QString filename) {
     stream.readRawData(&ver, 1);
 
     if (ver != CONFIGVER) {
-      f.close();
-      loadedGeneral();
-      return false;
+      emit loadedGeneral();
+      FAILRETURN;
     }
 
     if (filename.length())
@@ -72,8 +81,33 @@ bool SettingManager::loadSettings(QString filename) {
     auto plgsys = PluginSystem::instance();
 
     // General
-    stream >> m_toolwin >> m_wintool >> m_toolGridSize >> m_toolBox >>
-        m_toolwinMod >> m_toolMouse;
+    stream >> m_toolwin >> m_wintool >> m_toolGridSize >> m_runWin >>
+        m_toolBox >> m_toolwinMod >> m_toolMouse;
+
+    // check
+    if (m_toolGridSize < 30 || m_toolGridSize > 60)
+      FAILRETURN;
+    if (m_toolBox.isEmpty())
+      FAILRETURN;
+    switch (m_toolwinMod) {
+    case Qt::AltModifier:
+    case Qt::ControlModifier:
+    case Qt::MetaModifier:
+    case Qt::ShiftModifier:
+      break;
+    default:
+      FAILRETURN;
+    }
+    switch (m_toolMouse) {
+    case Qt::LeftButton:
+    case Qt::MiddleButton:
+    case Qt::RightButton:
+    case Qt::XButton1:
+    case Qt::XButton2:
+      break;
+    default:
+      FAILRETURN;
+    }
 
     // 读取结束，提示可以加载基础配置内容了
     emit loadedGeneral();
@@ -83,22 +117,32 @@ bool SettingManager::loadSettings(QString filename) {
     // 读取 Hotkey 的相关信息
     int len;
     stream >> len; // 先读取一下有几个
+    if (len < 0)
+      return false;
     for (auto i = 0; i < len; i++) {
       ToolStructInfo buf;
       stream >> buf.enabled >> buf.isPlugin >> buf.seq;
+      if (buf.seq.isEmpty())
+        FAILRETURN;
       if (buf.isPlugin) {
         stream >> buf.serviceID;
+        if (buf.serviceID < 0)
+          FAILRETURN;
         QByteArray arr;
         stream >> arr;
-        buf.provider = QString::fromUtf8(arr);
+        VAILDSTR(buf.provider);
         stream >> arr;
-        buf.params = QString::fromUtf8(arr);
+        VAILDSTR(buf.params);
+        stream >> arr;
+        VAILDSTR(buf.fakename);
 
         bool isStored;
         stream >> isStored;
         if (isStored) {
           int index;
           stream >> index;
+          if (index < 0 || index >= hashes.count())
+            FAILRETURN;
           arr = hashes[index];
         } else {
           stream >> arr;
@@ -122,9 +166,11 @@ bool SettingManager::loadSettings(QString filename) {
         // 如果是打开文件就没这么多事情了
         QByteArray arr;
         stream >> arr;
-        buf.process = QString::fromUtf8(arr);
+        VAILDSTR(buf.process);
         stream >> arr;
-        buf.params = QString::fromUtf8(arr);
+        VAILDSTR(buf.params);
+        stream >> arr;
+        VAILDSTR(buf.fakename);
         emit addHotKeyInfo(buf);
       }
     }
@@ -142,17 +188,28 @@ bool SettingManager::loadSettings(QString filename) {
       stream >> buf.isPlugin;
       if (buf.isPlugin) {
         stream >> buf.serviceID;
+        if (buf.serviceID < 0)
+          FAILRETURN;
         QByteArray arr;
         stream >> arr;
-        buf.provider = QString::fromUtf8(arr);
+        VAILDSTR(buf.iconpath);
+        buf.icon = Utilities::trimIconFromFile(buf.iconpath);
+        if (buf.icon.isNull())
+          buf.iconpath.clear();
         stream >> arr;
-        buf.params = QString::fromUtf8(arr);
+        VAILDSTR(buf.provider);
+        stream >> arr;
+        VAILDSTR(buf.params);
+        stream >> arr;
+        VAILDSTR(buf.fakename);
 
         bool isStored;
         stream >> isStored;
         if (isStored) {
           int index;
           stream >> index;
+          if (index < 0 || index >= hashes.count())
+            FAILRETURN;
           arr = hashes[index];
         } else {
           stream >> arr;
@@ -175,9 +232,16 @@ bool SettingManager::loadSettings(QString filename) {
       } else { // 如果是打开文件就没这么多事情了
         QByteArray arr;
         stream >> arr;
-        buf.process = QString::fromUtf8(arr);
+        VAILDSTR(buf.process);
         stream >> arr;
-        buf.params = QString::fromUtf8(arr);
+        VAILDSTR(buf.params);
+        stream >> arr;
+        VAILDSTR(buf.fakename);
+        stream >> arr;
+        VAILDSTR(buf.iconpath);
+        buf.icon = Utilities::trimIconFromFile(buf.iconpath);
+        if (buf.icon.isNull())
+          buf.iconpath.clear();
         emit setToolWinInfo(i, buf);
       }
     }
@@ -188,7 +252,7 @@ bool SettingManager::loadSettings(QString filename) {
     stream >> len; // 先读一下有几个
     for (auto i = 0; i < len; i++) {
       ToolStructInfo buf;
-
+      buf.enabled = true; // 修复信息
       // 对于 WinTool 来说， enabled 就没用了
       // 只存储相关基础信息就可以了
       stream >> buf.isPlugin;
@@ -196,15 +260,22 @@ bool SettingManager::loadSettings(QString filename) {
         stream >> buf.serviceID;
         QByteArray arr;
         stream >> arr;
-        buf.provider = QString::fromUtf8(arr);
+        VAILDSTR(buf.iconpath);
+        buf.icon = Utilities::trimIconFromFile(buf.iconpath);
         stream >> arr;
-        buf.params = QString::fromUtf8(arr);
+        VAILDSTR(buf.provider);
+        stream >> arr;
+        VAILDSTR(buf.params);
+        stream >> arr;
+        VAILDSTR(buf.fakename);
 
         bool isStored;
         stream >> isStored;
         if (isStored) {
           int index;
           stream >> index;
+          if (index < 0 || index >= hashes.count())
+            return false;
           arr = hashes[index];
         } else {
           stream >> arr;
@@ -228,9 +299,16 @@ bool SettingManager::loadSettings(QString filename) {
       } else {
         QByteArray arr;
         stream >> arr;
-        buf.process = QString::fromUtf8(arr);
+        VAILDSTR(buf.process);
         stream >> arr;
-        buf.params = QString::fromUtf8(arr);
+        VAILDSTR(buf.params);
+        stream >> arr;
+        VAILDSTR(buf.fakename);
+        stream >> arr;
+        VAILDSTR(buf.iconpath);
+        buf.icon = Utilities::trimIconFromFile(buf.iconpath);
+        if (buf.icon.isNull())
+          buf.iconpath.clear();
         emit addWinToolInfo(buf);
       }
     }
@@ -260,7 +338,7 @@ bool SettingManager::exportSettings(QString filename) {
     static char header[] = {'W', 'I', 'N', 'G', 'T', 'O', 'O', 'L', CONFIGVER};
     stream.writeRawData(header, sizeof(header));
     // General
-    stream << m_toolwin << m_wintool << m_toolGridSize << m_toolBox
+    stream << m_toolwin << m_wintool << m_toolGridSize << m_runWin << m_toolBox
            << m_toolwinMod << m_toolMouse;
     // 有些配置直接保存到 CenterWindow 里面了，为了减少内存占用
     emit sigSaveConfig(stream);
@@ -277,7 +355,7 @@ void SettingManager::resetSettings() {
   m_wintool = true;
   m_toolGridSize = TOOLGRIDSIZE;
 
-  m_toolBox = QKeySequence(Qt::KeyboardModifier::ShiftModifier | Qt::Key_Space);
+  m_toolBox = QKeySequence(Qt::KeyboardModifier::MetaModifier | Qt::Key_Space);
   m_runWin = QKeySequence(Qt::KeyboardModifier::MetaModifier | Qt::Key_R);
   m_toolwinMod = Qt::KeyboardModifier::ControlModifier;
   m_toolMouse = Qt::MouseButton::MidButton;
@@ -290,6 +368,26 @@ void SettingManager::resetSettings() {
   emit sigToolwinModChanged(m_toolwinMod);
   emit sigToolwinMouseBtnChanged(m_toolMouse);
   emit sigRunWinHotkeyChanged(m_runWin);
+}
+
+QString SettingManager::backupOrignSetting() {
+  auto config =
+      QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) +
+      "/wingTool_" + QUuid::createUuid().toString() + ".bak";
+  QFile::copy(configfile, config);
+  return config;
+}
+
+void SettingManager::saveFileDialogCurrent(QString path) {
+  QSettings settings(QApplication::organizationName(),
+                     QApplication::applicationName());
+  settings.setValue("curpath", path);
+}
+
+QString SettingManager::loadFileDialogCurrent() {
+  QSettings settings(QApplication::organizationName(),
+                     QApplication::applicationName());
+  return settings.value("curpath").toString();
 }
 
 void SettingManager::setModified() { ismod = true; }

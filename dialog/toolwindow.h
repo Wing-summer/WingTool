@@ -15,9 +15,7 @@ public:
 
 public slots:
   void loadSettings();
-
-  void setIcons(QVector<QIcon> icons);
-  void setIcon(int index, QIcon icon);
+  void setIcon(int index, QIcon icon, QString tip);
 
   void popup(QPoint pos);
 

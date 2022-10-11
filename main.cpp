@@ -7,6 +7,7 @@
 #include <DApplication>
 #include <DApplicationSettings>
 #include <DGuiApplicationHelper>
+#include <DNotifySender>
 #include <DWidgetUtil>
 #include <QMenu>
 #include <QMessageBox>
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]) {
   qputenv("XDG_CURRENT_DESKTOP", "Deepin");
   QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
   QApplication::setQuitOnLastWindowClosed(false);
+  qRegisterMetaType<Qt::MouseButton>("MouseButton");
 
   // 程序内强制添加 -platformtheme
   // deepin 参数喂给 Qt 让 Qt 正确使用 Deepin 主题修复各种奇怪样式问题
@@ -56,7 +58,8 @@ int main(int argc, char *argv[]) {
   QIcon picon = ProgramIcon;
   a.setProductIcon(picon);
   a.setProductName(QObject::tr("WingTool"));
-  a.setApplicationDescription("This is a dtk template application.");
+  a.setApplicationDescription(
+      QObject::tr("A powerful plugin toolbox for Deepin."));
 
   a.loadTranslator();
   a.setApplicationDisplayName("WingTool");
@@ -65,19 +68,35 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  // 单例传参
-  auto instance = DGuiApplicationHelper::instance();
-  QObject::connect(instance, &DGuiApplicationHelper::newProcessInstance,
-                   [=](qint64 pid, const QStringList &arguments) {
-                     Q_UNUSED(pid);
-                     Q_UNUSED(arguments);
-                   });
-
   // 保存程序的窗口主题设置
   DApplicationSettings as;
   Q_UNUSED(as)
 
   CenterWindow w;
+
+  // 单例传参
+  auto instance = DGuiApplicationHelper::instance();
+  QObject::connect(instance, &DGuiApplicationHelper::newProcessInstance,
+                   [&](qint64 pid, const QStringList &arguments) {
+                     Q_UNUSED(pid);
+                     Q_UNUSED(arguments);
+                     w.show();
+                     w.activateWindow();
+                     w.raise();
+                   });
+
+  // 初始化托盘，前半部分
+  QSystemTrayIcon systray;
+  QMenu sysmenu;
+  auto menu = &sysmenu;
+  auto ac = new QAction(QObject::tr("ShowMain"), menu);
+  QObject::connect(ac, &QAction::triggered, [&w] {
+    w.show(CenterWindow::TabPage::General);
+    w.activateWindow();
+    w.raise();
+  });
+  sysmenu.addAction(ac);
+  sysmenu.addSeparator();
 
   /*== 以下在主函数初始化确保单例 ==*/
   /* 之后不得使用构造函数的方式使用 */
@@ -87,7 +106,7 @@ int main(int argc, char *argv[]) {
   w.initAppManger();
 
   // 初始化插件系统
-  PluginSystem plgsys;
+  PluginSystem plgsys(menu);
   w.initPluginSys();
 
   // 初始化软件配置
@@ -108,35 +127,48 @@ int main(int argc, char *argv[]) {
   QObject::connect(&sm, &SettingManager::sigReset, &w,
                    &CenterWindow::resetConfig);
 
-  sm.loadSettings();
+  // 载入配置，并进行检查，非法重置
+  if (!sm.loadSettings()) {
+    dError(QObject::tr("ErrorLoadingSettings"));
+    auto path = sm.backupOrignSetting();
+    sm.resetSettings();
+    sm.saveSettings();
+    DMessageBox::critical(nullptr, QObject::tr("Err"),
+                          QObject::tr("ErrResetSettings") + '\n' + path);
+  }
 
   QObject::connect(&manager, &AppManager::checkToolShow,
                    [&sm, &manager](Qt::MouseButton btn) {
-                     auto mod = manager.getKeyModifier();
-                     return sm.toolwinEnabled() && mod == sm.toolwinMod() &&
+                     auto mods = manager.getKeyModifiers();
+                     return sm.toolwinEnabled() && mods == sm.toolwinMod() &&
                             sm.toolwinMouseBtn() == btn;
                    });
 
   /*===========================*/
 
-  // 初始化托盘
-  QSystemTrayIcon systray;
-  QMenu sysmenu;
-  auto menu = &sysmenu;
-  auto ac = new QAction(QObject::tr("ShowMain"), menu);
-  QObject::connect(ac, &QAction::triggered,
-                   [&w] { w.show(CenterWindow::TabPage::General); });
-  sysmenu.addAction(ac);
-  sysmenu.addSeparator();
+  // 初始化托盘，后半部分
+  if (plgsys.hasRegisteredMenu())
+    sysmenu.addSeparator();
   ac = new QAction(QObject::tr("About"), menu);
-  QObject::connect(ac, &QAction::triggered,
-                   [&w] { w.show(CenterWindow::TabPage::AboutAuthor); });
+  QObject::connect(ac, &QAction::triggered, [&w] {
+    w.show(CenterWindow::TabPage::AboutAuthor);
+    w.activateWindow();
+    w.raise();
+  });
   sysmenu.addAction(ac);
   ac = new QAction(QObject::tr("Sponsor"), menu);
-  QObject::connect(ac, &QAction::triggered,
-                   [&w] { w.show(CenterWindow::TabPage::Sponsor); });
+  QObject::connect(ac, &QAction::triggered, [&w] {
+    w.show(CenterWindow::TabPage::Sponsor);
+    w.activateWindow();
+    w.raise();
+  });
   sysmenu.addAction(ac);
   ac = new QAction(QObject::tr("Exit"), menu);
+
+  sysmenu.addAction(ac);
+  systray.setContextMenu(menu);
+  systray.setToolTip(QObject::tr("WingTool"));
+  systray.setIcon(picon);
   QObject::connect(ac, &QAction::triggered, [&w, &sm] {
     if (DMessageBox::question(&w, QObject::tr("Exit"),
                               QObject::tr("ConfirmExit")) == DMessageBox::Yes) {
@@ -144,19 +176,15 @@ int main(int argc, char *argv[]) {
       QApplication::exit(0);
     }
   });
-  sysmenu.addAction(ac);
-  systray.setContextMenu(menu);
-  systray.setToolTip(QObject::tr("WingTool"));
-  systray.setIcon(picon);
-  systray.show();
-
   QObject::connect(&systray, &QSystemTrayIcon::activated,
                    [&w](QSystemTrayIcon::ActivationReason reason) {
                      if (reason == QSystemTrayIcon::ActivationReason::Trigger) {
-                       w.show(CenterWindow::TabPage::General);
+                       w.show();
+                       w.activateWindow();
                        w.raise();
                      }
                    });
+  systray.show();
 
   Dtk::Widget::moveToCenter(&w);
 

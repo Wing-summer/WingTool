@@ -46,7 +46,7 @@ public:
   EventMonitor(QObject *parent = nullptr);
   ~EventMonitor() override;
 
-  Qt::KeyboardModifier getKeyModifier() const;
+  Qt::KeyboardModifiers getKeyModifiers() const;
 
 signals:
   void buttonPress(Qt::MouseButton btn, int x, int y); // 当鼠标按键被按下时
@@ -70,7 +70,7 @@ private:
 
   std::chrono::system_clock::time_point clickbefore;
 
-  Qt::KeyboardModifier keyModifier;
+  Qt::KeyboardModifiers keyModifiers;
 };
 
 #endif

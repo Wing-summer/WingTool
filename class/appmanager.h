@@ -25,7 +25,7 @@ public:
   bool editHotkey(Hotkey *hotkey, QKeySequence &keyseq);
   void clearHotkey();
 
-  Qt::KeyboardModifier getKeyModifier() const;
+  Qt::KeyboardModifiers getKeyModifiers() const;
 
 signals:
   void buttonPress(Qt::MouseButton btn, int x, int y);
@@ -45,8 +45,7 @@ signals:
   void toolSelTriggered(int index);
 
 public slots:
-  void setToolIcons(QVector<QIcon> icons);
-  void setToolIcon(int index, QIcon icon);
+  void setToolIcon(int index, QIcon icon, QString tip);
 
 private:
   EventMonitor monitor;
