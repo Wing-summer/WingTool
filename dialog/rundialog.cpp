@@ -1,5 +1,6 @@
 #include "rundialog.h"
 #include <DDialogButtonBox>
+#include <DMessageManager>
 #include <QShortcut>
 
 RunDialog::RunDialog(DDialog *parent)
@@ -45,6 +46,11 @@ RunDialog::RunDialog(DDialog *parent)
 
 void RunDialog::on_accept() {
   auto plg = ps->getSelectedPlg();
+  if (plg == nullptr) {
+    DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                             tr("NoProcessSet"));
+    return;
+  }
   QVector<QVariant> params;
   for (auto &item : Utilities::parseCmdParams(dledit->text())) {
     params.append(item);
@@ -54,9 +60,9 @@ void RunDialog::on_accept() {
   done(res);
 }
 
-void RunDialog::on_reject() { done(0); }
+void RunDialog::on_reject() { done(-1); }
 
 void RunDialog::closeEvent(QCloseEvent *event) {
   Q_UNUSED(event);
-  done(0);
+  done(-1);
 }

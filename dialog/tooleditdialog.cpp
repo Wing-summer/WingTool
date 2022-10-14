@@ -153,20 +153,22 @@ ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
 ToolStructInfo ToolEditDialog::getResult() { return res; }
 
 void ToolEditDialog::on_accept() {
+  res.isPlugin = ps->getSelectedIndex() >= 0;
+
   res.icon = sicon.isNull() ? ficon : sicon;
-  if (res.icon.isNull()) {
+  if (res.icon.isNull() && !res.isPlugin) {
     DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                              tr("NoVaildIconSet"));
     return;
   }
 
-  res.isPlugin = ps->getSelectedIndex() >= 0;
   res.enabled = true; // 指示该信息有效，否则会被忽略
 
   if (res.isPlugin) {
     auto sel = ps->getSelectedPlg();
     res.process = sel->pluginName();
     res.serviceID = cbService->currentIndex();
+    res.serviceName = plgsys->pluginServiceNames(sel)[res.serviceID];
     res.provider = plgsys->pluginProvider(sel);
     res.pluginIndex = ps->getSelectedIndex();
   } else {
@@ -192,8 +194,15 @@ void ToolEditDialog::on_reject() {
 
 void ToolEditDialog::refreshIcon() {
   if (sicon.isNull()) {
-    if (!ficon.isNull()) {
-      iconpre->setIcon(ficon);
+    auto plg = ps->getSelectedPlg();
+    if (plg) {
+      iconpre->setIcon(plg->pluginIcon());
+    } else {
+      if (!ficon.isNull()) {
+        iconpre->setIcon(ficon);
+      } else {
+        iconpre->setIcon(QIcon());
+      }
     }
   } else {
     iconpre->setIcon(sicon);

@@ -130,7 +130,12 @@ bool PluginSystem::LoadPlugin() {
   return true;
 }
 
-void PluginSystem::UnloadPlugin() {}
+void PluginSystem::UnloadPlugin() {
+  for (auto item : m_plgs) {
+    item->unload();
+    item->deleteLater();
+  }
+}
 
 QList<IWingToolPlg *> PluginSystem::plugins() { return m_plgs; }
 
@@ -188,25 +193,29 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         // 插件至少含有一种有效服务
         auto srvc = meta->methodCount();
 
+        // 暂时缓存一下原函数名称和参数个数，供之后的函数名本地化之用
         QVector<const char *> tmpfunc;
-        // 暂时缓存一下原函数名称，供之后的函数名本地化之用
+        QVector<int> tmpfuncargc;
 
         for (auto i = 0; i < srvc; i++) {
           auto m = meta->method(i);
+
           if (strcmp(PLUGINSRVTAG, m.tag())) {
             continue;
           }
 
-          if (m.parameterCount() > 10) {
+          auto argc = m.parameterCount();
+          if (argc > 10) {
             dError(tr("[InvaildPlgSrvArg]") +
                    QString("%1/10").arg(m.parameterCount()));
             continue;
           }
+          tmpfuncargc.append(argc);
 
-          // 记录有效服务函数
           record.services.append(m);
           tmpfunc.append(m.name());
-          record.serviceNames.append(QString::fromUtf8(m.name()));
+          auto name = QString::fromUtf8(m.name());
+          record.serviceNames.append(name);
         }
 
         if (record.services.isEmpty()) {
@@ -224,9 +233,11 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           return;
         }
 
-        for (auto &item : tmpfunc) {
+        auto len = tmpfunc.count();
+        for (auto i = 0; i < len; i++) {
           record.servicetrNames.append(
-              QCoreApplication::translate(clsname, item));
+              QCoreApplication::translate(clsname, tmpfunc[i]) +
+              QString(" [%1]").arg(tmpfuncargc[i]));
         }
 
         WingPluginInfo info;
@@ -239,7 +250,6 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         loadedplginfos << info;
         m_plgs << p;
         loadedProvider << provider;
-        m_plgsMD5s << Utilities::getPUID(p);
 
         dWarning(tr("PluginInitRegister"));
 
@@ -333,14 +343,18 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                 });
         connect(p, &IWingToolPlg::remoteCall, this,
                 [=](const QString provider, const QString callback,
-                    QVector<QVariant> params) {
+                    QVector<QVariant> params, RemoteCallError &err) {
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
-                  if (sender == nullptr)
-                    return RemoteCallError::Unkown;
+                  if (sender == nullptr) {
+                    err = RemoteCallError::Unkown;
+                    return QVariant();
+                  }
 
                   auto index = loadedProvider.indexOf(provider);
-                  if (index < 0)
-                    return RemoteCallError::PluginNotFound;
+                  if (index < 0) {
+                    err = RemoteCallError::PluginNotFound;
+                    return QVariant();
+                  }
 
                   auto plg = m_plgs[index];
 
@@ -348,15 +362,37 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   auto res = this->remoteCall(
                       plg, const_cast<QString &>(callback), params, ret);
                   if (res == 0) {
-                    return RemoteCallError::PluginNotFound;
+                    err = RemoteCallError::PluginNotFound;
+                    return QVariant();
                   } else if (res < 0) {
-                    return RemoteCallError::Unkown;
+                    err = RemoteCallError::Unkown;
+                    return QVariant();
                   }
 
-                  // 将返回值以相同方式传送回去
-                  emit sender->pluginServicePipe(RemoteCallRes, {ret});
+                  err = RemoteCallError::Success;
+                  return ret;
+                });
+        connect(p, &IWingToolPlg::sendRemoteMessage, this,
+                [=](const QString provider, int id, QList<QVariant> params,
+                    RemoteCallError &err) {
+                  auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
+                  if (sender == nullptr) {
+                    err = RemoteCallError::Unkown;
+                    return QVariant();
+                  }
 
-                  return RemoteCallError::Success;
+                  auto index = loadedProvider.indexOf(provider);
+                  if (index < 0) {
+                    err = RemoteCallError::PluginNotFound;
+                    return QVariant();
+                  }
+
+                  auto plg = m_plgs[index];
+
+                  QVariant ret;
+                  auto res = plg->pluginServicePipe(id, params);
+                  err = RemoteCallError::Success;
+                  return res;
                 });
 
         emit p->pluginServicePipe(HostService, {LoadedPluginMsg});
@@ -408,8 +444,6 @@ bool PluginSystem::pluginCall(QString provider, int serviceID,
   QVariant ret;
   return remoteCall(plg, serviceID, params, ret) > 0;
 }
-
-QByteArray PluginSystem::pluginHash(int index) { return m_plgsMD5s[index]; }
 
 int PluginSystem::pluginIndexByProvider(QString provider) {
   return loadedProvider.indexOf(provider);
@@ -515,6 +549,7 @@ int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
     params.resize(10);
 
     for (auto i = 0; i < len; i++) {
+      auto oldtypen = params[i].typeName();
       if (!params[i].convert(caller.parameterType(i))) {
         dError(tr("[remoteCallArgErr]") +
                QString("%1 : %2 [%3:%4|%5]")
@@ -522,7 +557,7 @@ int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
                    .arg(QString::fromUtf8(caller.name()))
                    .arg(i)
                    .arg(QMetaType::typeName(caller.parameterType(i)))
-                   .arg(params[i].typeName()));
+                   .arg(oldtypen));
         return CALL_ARG_ERROR;
       }
     }

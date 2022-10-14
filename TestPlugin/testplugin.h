@@ -57,6 +57,7 @@ public:
   Catagorys pluginCatagory() override;
   uint pluginVersion() override;
   QString pluginComment() override;
+  QString pluginWebsite() override;
   QIcon pluginIcon() override;
   const QMetaObject *serviceMeta() override;
   const QPointer<QObject> serviceHandler() override;
@@ -66,7 +67,7 @@ public:
 
 public slots:
   QVariant pluginServicePipe(int serviceID, QList<QVariant> params) override;
-  virtual void onSetting() override;
+  virtual void onPluginCenter() override;
 
 private:
   QUuid testhotkey;

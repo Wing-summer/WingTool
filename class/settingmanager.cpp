@@ -112,8 +112,6 @@ bool SettingManager::loadSettings(QString filename) {
     // 读取结束，提示可以加载基础配置内容了
     emit loadedGeneral();
 
-    QVector<QByteArray> hashes;
-
     // 读取 Hotkey 的相关信息
     int len;
     stream >> len; // 先读取一下有几个
@@ -125,10 +123,9 @@ bool SettingManager::loadSettings(QString filename) {
       if (buf.seq.isEmpty())
         FAILRETURN;
       if (buf.isPlugin) {
-        stream >> buf.serviceID;
-        if (buf.serviceID < 0)
-          FAILRETURN;
         QByteArray arr;
+        stream >> arr;
+        VAILDSTR(buf.serviceName);
         stream >> arr;
         VAILDSTR(buf.provider);
         stream >> arr;
@@ -136,29 +133,17 @@ bool SettingManager::loadSettings(QString filename) {
         stream >> arr;
         VAILDSTR(buf.fakename);
 
-        bool isStored;
-        stream >> isStored;
-        if (isStored) {
-          int index;
-          stream >> index;
-          if (index < 0 || index >= hashes.count())
-            FAILRETURN;
-          arr = hashes[index];
-        } else {
-          stream >> arr;
-          hashes.append(arr);
-        }
-
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
         if (pi < 0)
           continue;
-        // 检查兼容性，不兼容出门左拐
+        // 检查兼容性，看看有没有对应的服务名
         auto plg = plgsys->plugin(pi);
-        if (!Utilities::isPluginCompatible(plg, plgsys->pluginServiceNames(plg),
-                                           arr)) {
+        auto sindex = plgsys->pluginServiceNames(plg).indexOf(buf.serviceName);
+        if (sindex < 0) {
           continue;
         }
+        buf.serviceID = sindex; // 修复填进去
         // 经历过重重检验，合格入库
         CORRECTINFO(buf);
         emit addHotKeyInfo(buf);
@@ -187,10 +172,9 @@ bool SettingManager::loadSettings(QString filename) {
         continue;
       stream >> buf.isPlugin;
       if (buf.isPlugin) {
-        stream >> buf.serviceID;
-        if (buf.serviceID < 0)
-          FAILRETURN;
         QByteArray arr;
+        stream >> arr;
+        VAILDSTR(buf.serviceName);
         stream >> arr;
         VAILDSTR(buf.iconpath);
         buf.icon = Utilities::trimIconFromFile(buf.iconpath);
@@ -203,29 +187,17 @@ bool SettingManager::loadSettings(QString filename) {
         stream >> arr;
         VAILDSTR(buf.fakename);
 
-        bool isStored;
-        stream >> isStored;
-        if (isStored) {
-          int index;
-          stream >> index;
-          if (index < 0 || index >= hashes.count())
-            FAILRETURN;
-          arr = hashes[index];
-        } else {
-          stream >> arr;
-          hashes.append(arr);
-        }
-
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
         if (pi < 0)
           continue;
-        // 检查兼容性，不兼容出门左拐
+        // 检查兼容性，看看有没有对应的服务名
         auto plg = plgsys->plugin(pi);
-        if (!Utilities::isPluginCompatible(plg, plgsys->pluginServiceNames(plg),
-                                           arr)) {
+        auto sindex = plgsys->pluginServiceNames(plg).indexOf(buf.serviceName);
+        if (sindex < 0) {
           continue;
         }
+        buf.serviceID = sindex; // 修复填进去
         // 经历过重重检验，合格入库
         CORRECTINFO(buf);
         emit setToolWinInfo(i, buf);
@@ -257,8 +229,9 @@ bool SettingManager::loadSettings(QString filename) {
       // 只存储相关基础信息就可以了
       stream >> buf.isPlugin;
       if (buf.isPlugin) {
-        stream >> buf.serviceID;
         QByteArray arr;
+        stream >> arr;
+        VAILDSTR(buf.serviceName);
         stream >> arr;
         VAILDSTR(buf.iconpath);
         buf.icon = Utilities::trimIconFromFile(buf.iconpath);
@@ -269,30 +242,17 @@ bool SettingManager::loadSettings(QString filename) {
         stream >> arr;
         VAILDSTR(buf.fakename);
 
-        bool isStored;
-        stream >> isStored;
-        if (isStored) {
-          int index;
-          stream >> index;
-          if (index < 0 || index >= hashes.count())
-            return false;
-          arr = hashes[index];
-        } else {
-          stream >> arr;
-          hashes.append(arr);
-        }
-
         auto pi = plgsys->pluginIndexByProvider(buf.provider);
         // 找不到了，插件丢失或者不兼容
         if (pi < 0)
           continue;
-        // 检查兼容性，不兼容出门左拐
+        // 检查兼容性，看看有没有对应的服务名
         auto plg = plgsys->plugin(pi);
-        if (!Utilities::isPluginCompatible(plg, plgsys->pluginServiceNames(plg),
-                                           arr)) {
+        auto sindex = plgsys->pluginServiceNames(plg).indexOf(buf.serviceName);
+        if (sindex < 0) {
           continue;
         }
-
+        buf.serviceID = sindex; // 修复填进去
         // 经历过重重检验，合格入库
         CORRECTINFO(buf);
         emit addWinToolInfo(buf);

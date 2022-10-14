@@ -8,6 +8,7 @@
 #include <DLabel>
 #include <DMessageBox>
 #include <DMessageManager>
+#include <DNotifySender>
 #include <DTextBrowser>
 #include <DTitlebar>
 #include <DWidgetUtil>
@@ -23,6 +24,8 @@
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
 #include <QVector>
+
+DWIDGET_USE_NAMESPACE
 
 CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   QIcon picon = ProgramIcon;
@@ -340,6 +343,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
       manager->setToolIcon(sellbl, icon2, toolinfos[sellbl].fakename);
       manager->setToolIcon(res, icon1, toolinfos[res].fakename);
       lbls[res]->setChecked(true);
+      sm->setModified();
     }
   });
   blist.append(b);
@@ -352,6 +356,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     auto ilbl = lbls[sellbl];
     ilbl->setIcon(QIcon());
     manager->setToolIcon(sellbl, QIcon(), "");
+    sm->setModified();
     emit ilbl->toggled(true);
   });
   blist.append(b);
@@ -514,12 +519,13 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   tbplginfo = new DTextBrowser(w);
   tbplginfo->setUndoRedoEnabled(false);
   tbplginfo->setText(tr("No selected plugin."));
+  tbplginfo->setLineWrapMode(DTextBrowser::LineWrapMode::NoWrap);
 
   pvlayout->addWidget(tbplginfo, 1);
-  auto btnplgset = new DPushButton(tr("Setting"), w);
+  auto btnplgset = new DPushButton(tr("PluginCenter"), w);
   connect(btnplgset, &DPushButton::clicked, this, [=] {
     auto plg = plgsys->plugin(lwplgs->currentRow());
-    plg->onSetting();
+    plg->onPluginCenter();
   });
   btnplgset->setEnabled(false);
   pvlayout->addWidget(btnplgset);
@@ -941,8 +947,11 @@ void CenterWindow::on_resetSettings() {
 
 void CenterWindow::on_runplg() {
   RunDialog d;
-  if (d.exec()) {
-  } else {
+  if (!d.exec()) {
+    DUtil::DNotifySender(tr("[%1] RunErr").arg(qApp->applicationName()))
+        .appIcon("dialog-error")
+        .appName(qApp->applicationName())
+        .call();
   }
 }
 
@@ -1183,14 +1192,8 @@ void CenterWindow::getConfig(QDataStream &f) {
   for (auto &p : scinfos) {
     f << p.enabled << p.isPlugin << p.seq;
     if (p.isPlugin) {
-      f << p.serviceID << p.provider.toUtf8() << p.params.toUtf8()
+      f << p.serviceName.toUtf8() << p.provider.toUtf8() << p.params.toUtf8()
         << p.fakename.toUtf8();
-      auto i = plgindices.indexOf(p.pluginIndex);
-      if (i >= 0) {
-        f << true << i;
-      } else {
-        f << false << plgsys->pluginHash(p.pluginIndex);
-      }
     } else {
       f << p.process.toUtf8() << p.params.toUtf8()
         << p.fakename.toUtf8(); // 如果是打开文件就没这么多事情了
@@ -1207,14 +1210,8 @@ void CenterWindow::getConfig(QDataStream &f) {
     if (p.enabled) {
       f << p.isPlugin;
       if (p.isPlugin) {
-        f << p.serviceID << p.iconpath.toUtf8() << p.provider.toUtf8()
-          << p.params.toUtf8() << p.fakename.toUtf8();
-        auto i = plgindices.indexOf(p.pluginIndex);
-        if (i >= 0) {
-          f << true << i;
-        } else {
-          f << false << plgsys->pluginHash(p.pluginIndex);
-        }
+        f << p.serviceName.toUtf8() << p.iconpath.toUtf8()
+          << p.provider.toUtf8() << p.params.toUtf8() << p.fakename.toUtf8();
       } else {
         f << p.process.toUtf8() << p.params.toUtf8() << p.fakename.toUtf8()
           << p.iconpath.toUtf8(); // 如果是打开文件就没这么多事情了
@@ -1229,14 +1226,8 @@ void CenterWindow::getConfig(QDataStream &f) {
     // 只存储相关基础信息就可以了
     f << p.isPlugin;
     if (p.isPlugin) {
-      f << p.serviceID << p.iconpath.toUtf8() << p.provider.toUtf8()
+      f << p.serviceName.toUtf8() << p.iconpath.toUtf8() << p.provider.toUtf8()
         << p.params.toUtf8() << p.fakename.toUtf8();
-      auto i = plgindices.indexOf(p.pluginIndex);
-      if (i >= 0) {
-        f << true << i;
-      } else {
-        f << false << plgsys->pluginHash(p.pluginIndex);
-      }
     } else {
       f << p.process.toUtf8() << p.params.toUtf8() << p.fakename.toUtf8()
         << p.iconpath.toUtf8(); // 如果是打开文件就没这么多事情了

@@ -57,6 +57,10 @@ uint TestPlugin::pluginVersion() { return 1; }
 
 QString TestPlugin::pluginComment() { return "This is a test plugin !"; }
 
+QString TestPlugin::pluginWebsite() {
+  return "https://www.cnblogs.com/wingsummer/";
+}
+
 QIcon TestPlugin::pluginIcon() { return QIcon(":/TestPlugin/logo.svg"); }
 
 const QPointer<QObject> TestPlugin::serviceHandler() {
@@ -115,7 +119,7 @@ QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
   return QVariant();
 }
 
-void TestPlugin::onSetting() {
+void TestPlugin::onPluginCenter() {
   QMessageBox::information(nullptr, "Settings", "You Clicked Settings!");
 }
 

@@ -120,6 +120,7 @@ void ShortCutEditDialog::on_accept() {
     auto sel = ps->getSelectedPlg();
     res.process = sel->pluginName();
     res.serviceID = cbService->currentIndex();
+    res.serviceName = plgsys->pluginServiceNames(sel)[res.serviceID];
     res.provider = plgsys->pluginProvider(sel);
     res.pluginIndex = ps->getSelectedIndex();
   } else {

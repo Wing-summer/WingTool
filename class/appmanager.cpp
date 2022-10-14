@@ -7,12 +7,11 @@ AppManager *AppManager::m_instance = nullptr;
 
 AppManager::AppManager(QObject *parent) : QObject(parent) {
   // 初始化全局鼠标监控
-
-#define CONNECT(sig) connect(&monitor, SIGNAL(sig), this, SLOT(sig));
-  CONNECT(clicked);
-  CONNECT(doubleClicked);
-  CONNECT(mouseWheel);
-  CONNECT(mouseMove);
+  connect(&monitor, &EventMonitor::clicked, this, &AppManager::clicked);
+  connect(&monitor, &EventMonitor::doubleClicked, this,
+          &AppManager::doubleClicked);
+  connect(&monitor, &EventMonitor::mouseWheel, this, &AppManager::mouseWheel);
+  connect(&monitor, &EventMonitor::mouseMove, this, &AppManager::mouseMove);
 
   connect(&monitor, &EventMonitor::buttonPress,
           [=](Qt::MouseButton btn, int x, int y) {

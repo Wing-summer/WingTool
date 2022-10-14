@@ -7,7 +7,6 @@
 #include <DApplication>
 #include <DApplicationSettings>
 #include <DGuiApplicationHelper>
-#include <DNotifySender>
 #include <DWidgetUtil>
 #include <QMenu>
 #include <QMessageBox>
@@ -106,7 +105,7 @@ int main(int argc, char *argv[]) {
   w.initAppManger();
 
   // 初始化插件系统
-  PluginSystem plgsys(menu);
+  PluginSystem *plgsys = new PluginSystem(menu);
   w.initPluginSys();
 
   // 初始化软件配置
@@ -147,7 +146,7 @@ int main(int argc, char *argv[]) {
   /*===========================*/
 
   // 初始化托盘，后半部分
-  if (plgsys.hasRegisteredMenu())
+  if (plgsys->hasRegisteredMenu())
     sysmenu.addSeparator();
   ac = new QAction(QObject::tr("About"), menu);
   QObject::connect(ac, &QAction::triggered, [&w] {
@@ -169,10 +168,11 @@ int main(int argc, char *argv[]) {
   systray.setContextMenu(menu);
   systray.setToolTip(QObject::tr("WingTool"));
   systray.setIcon(picon);
-  QObject::connect(ac, &QAction::triggered, [&w, &sm] {
+  QObject::connect(ac, &QAction::triggered, [&w, &sm, plgsys] {
     if (DMessageBox::question(&w, QObject::tr("Exit"),
                               QObject::tr("ConfirmExit")) == DMessageBox::Yes) {
       sm.saveSettings();
+      plgsys->deleteLater();
       QApplication::exit(0);
     }
   });

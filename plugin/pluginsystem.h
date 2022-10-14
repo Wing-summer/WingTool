@@ -38,8 +38,6 @@ public:
 
   bool pluginCall(QString provider, int serviceID, QVector<QVariant> params);
 
-  QByteArray pluginHash(int index);
-
   int pluginIndexByProvider(QString provider);
 
   const QStringList &pluginServiceNames(IWingToolPlg *plg);
@@ -79,8 +77,6 @@ private:
   QMap<IWingToolPlg::Catagorys, QList<IWingToolPlg *>>
       m_catplgs; // 对应类别的插件集合
   QMap<HookIndex, QList<IWingToolPlg *>> dispatcher; // Hook 消息订阅
-
-  QList<QByteArray> m_plgsMD5s; // 已加载的插件 HASH
 
   QMenu *traymenu;
 

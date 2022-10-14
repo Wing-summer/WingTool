@@ -14,15 +14,9 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
   auto layout = new QHBoxLayout(w);
 
   lsplgs = new DListWidget(this);
-  int i = -1;
   for (auto item : PluginSystem::instance()->plugins()) {
-    i++;
-    if (!item->isTool())
-      continue;
-    auto l = new QListWidgetItem(Utilities::processPluginIcon(item),
-                                 item->pluginName());
-    l->setData(Qt::UserRole, i);
-    lsplgs->addItem(l);
+    new QListWidgetItem(Utilities::processPluginIcon(item), item->pluginName(),
+                        lsplgs);
   }
   layout->addWidget(lsplgs);
   addSpacing(10);
@@ -30,6 +24,7 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
   tbplginfo = new DTextBrowser(this);
   tbplginfo->setUndoRedoEnabled(false);
   tbplginfo->setText(tr("No selected plugin."));
+  tbplginfo->setLineWrapMode(DTextBrowser::LineWrapMode::NoWrap);
 
   connect(lsplgs, &DListWidget::itemSelectionChanged, this, [=] {
     tbplginfo->clear();
@@ -40,7 +35,7 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
 
     tbplginfo->append(QObject::tr("Catagory:") +
                       QObject::tr(e.valueToKey(int(plg->pluginCatagory()))));
-    tbplginfo->append(QObject::tr("Version") +
+    tbplginfo->append(QObject::tr("Version:") +
                       QString::number(plg->pluginVersion()));
     tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
     tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
@@ -65,13 +60,12 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
   QList<DButtonBoxButton *> blist;
   auto b = new DButtonBoxButton(tr("Select"), this);
   connect(b, &DButtonBoxButton::clicked, this, [=] {
-    auto item = lsplgs->currentItem();
-    if (!item) {
+    auto sel = lsplgs->currentIndex().row();
+    if (sel < 0) {
       DMessageManager::instance()->sendMessage(this, ProgramIcon,
                                                tr("NoSelection"));
       return;
     }
-    auto sel = item->data(Qt::UserRole).toInt();
     this->done(sel);
   });
   blist.append(b);

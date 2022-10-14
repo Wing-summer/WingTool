@@ -109,6 +109,8 @@ public:
   virtual Catagorys pluginCatagory() = 0;
   // 插件版本号，作者定
   virtual uint pluginVersion() = 0;
+  // 插件网站，供插件作者宣传用
+  virtual QString pluginWebsite() = 0;
   // 插件说明
   virtual QString pluginComment() = 0;
   // 插件图标，我建议必须有一个，否则后面不好识别
@@ -119,9 +121,6 @@ public:
   virtual const QPointer<QObject> serviceHandler() = 0;
   // 插件订阅，如果需要跟踪鼠标就需要订阅
   virtual HookIndex getHookSubscribe() { return HookIndex::None; }
-  // 指示是否作为工具，如果 false，则不在工具选择中显示
-  // 但这不意味着不在插件列表显示
-  virtual bool isTool() { return true; }
   // 注册在程序右键托盘菜单，这个对于某些功能会十分方便
   // 但非必要不要弄，因为这样的插件多了，反而麻烦了，一个插件仅有一项
   // 类型仅支持 QMenu* 或者 QAction* 否则不载入
@@ -143,15 +142,20 @@ signals:
 
   // 跨插件函数远程调用，其中 puid 为插件的唯一标识，
   // callback 为回调函数名称， params 为远程调用的参数
-  RemoteCallError remoteCall(const QString provider, const QString callback,
-                             QVector<QVariant> params);
+  QVariant remoteCall(const QString provider, const QString callback,
+                      QVector<QVariant> params, RemoteCallError &err);
+
+  // 向某个插件发送一个消息
+  // 注：不要用它发送数值小于 0 的消息，会发送失败滴，别瞎搞
+  QVariant sendRemoteMessage(const QString provider, int id,
+                             QList<QVariant> params, RemoteCallError &err);
 
 public slots:
   // 宿主开始回调函数时候使用，第一个参数是函数服务索引，第二个是参数集合
   virtual QVariant pluginServicePipe(int serviceID, QList<QVariant> params) = 0;
 
-  // 当插件窗口选中该插件点击设置按钮时触发，以供插件调用自身设置对话框
-  virtual void onSetting() {}
+  // 当插件窗口选中该插件点击插件中心按钮时触发，以供插件调用自身设置对话框
+  virtual void onPluginCenter() = 0;
 
   // 当鼠标任何一个键被按下就会触发该函数，如果想处理重载
   virtual void buttonPress(Qt::MouseButton btn, int x, int y) {
