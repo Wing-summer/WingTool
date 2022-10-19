@@ -47,17 +47,22 @@ public:
   bool hasRegisteredMenu();
 
 private:
-  IWingToolPlg *loopUpHotkey(QUuid uuid, int &index);
+  IWingToolPlg *loopUpHotkey(QUuid uuid);
   int remoteCall(IWingToolPlg *plg, QString &callback, QVector<QVariant> params,
                  QVariant &ret);
   int remoteCall(IWingToolPlg *plg, int callID, QVector<QVariant> params,
                  QVariant &ret);
+  int getCallID(IWingToolPlg *plg, QString &callback, QVector<QVariant> params,
+                bool isInterface);
 
 private:
   struct PluginRecord {
     QString provider;
     QList<QUuid> hotkeyuid;
     QList<QMetaMethod> services;
+
+    QList<QMetaMethod> interfaces;
+    QStringList interfaceNames;
 
     QStringList serviceNames;   // 插件服务名缓存
     QStringList servicetrNames; // 插件服务本地化名称缓存

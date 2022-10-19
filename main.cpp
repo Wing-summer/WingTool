@@ -8,6 +8,7 @@
 #include <DApplicationSettings>
 #include <DGuiApplicationHelper>
 #include <DWidgetUtil>
+#include <QDesktopServices>
 #include <QMenu>
 #include <QMessageBox>
 #include <QSystemTrayIcon>
@@ -153,6 +154,12 @@ int main(int argc, char *argv[]) {
     w.show(CenterWindow::TabPage::AboutAuthor);
     w.activateWindow();
     w.raise();
+  });
+  sysmenu.addAction(ac);
+  ac = new QAction(QObject::tr("Wiki"), menu);
+  QObject::connect(ac, &QAction::triggered, [=] {
+    QDesktopServices::openUrl(QUrl("https://code.gitlink.org.cn/wingsummer/"
+                                   "WingTool/wiki/%E7%AE%80%E4%BB%8B"));
   });
   sysmenu.addAction(ac);
   ac = new QAction(QObject::tr("Sponsor"), menu);

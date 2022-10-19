@@ -102,6 +102,14 @@ Qt::KeyboardModifiers AppManager::getKeyModifiers() const {
   return monitor.getKeyModifiers();
 }
 
+Qt::MouseButtons AppManager::getMouseButtons() const {
+  return monitor.getMouseButtons();
+}
+
+bool AppManager::isRegistered(QKeySequence &seq) const {
+  return registeredSeq.contains(seq);
+}
+
 void AppManager::setToolIcon(int index, QIcon icon, QString tip) {
   toolwin.setIcon(index, icon, tip);
 }

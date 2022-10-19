@@ -26,6 +26,10 @@
 
 &emsp;&emsp;本软件定位是本地生产力基础工具，旨在快速启动和使用高效工具。本人不考虑像 utool 和 quicker 之类提供插件商店。该程序不会进行与网络相关的任何操作，所有的插件安装都是本地的。如果有仅本地的需要，待该软件出 beta 之后，可以尝试该软件，发现 Bug 并递交修复。
 
+## Wiki
+
+&emsp;&emsp;教程文档已撰写完毕，点击 [此链接](https://code.gitlink.org.cn/wingsummer/WingTool/wiki/%E7%AE%80%E4%BB%8B) 进行学习如何使用。
+
 ## 效果图
 
 <p align="center">
@@ -48,3 +52,10 @@
 <p align="center">感谢支持</p>
 
 </p>
+
+## 相关仓库
+
+* Gitea : https://code.gitlink.org.cn/wingsummer/WingTool
+* Gitee : https://gitee.com/wing-cloud/wing-tool
+* Github : https://github.com/Wing-summer/WingTool
+* Gitlink : https://www.gitlink.org.cn/wingsummer/WingTool

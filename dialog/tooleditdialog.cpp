@@ -50,28 +50,7 @@ ToolEditDialog::ToolEditDialog(ToolStructInfo res, DMainWindow *parent)
   connect(fcicon, &DFileChooserEdit::textChanged, this, [=] {
     auto name = fcicon->text().trimmed();
     this->res.iconpath = name;
-    if (name.isEmpty()) {
-      sicon = QIcon();
-      this->refreshIcon();
-      return;
-    }
-    if (QIcon::hasThemeIcon(name)) {
-      sicon = QIcon::fromTheme(name);
-    } else {
-      if (QFile::exists(name)) {
-        QPixmap img;
-        if (img.load(name)) {
-          auto icon = QIcon((img.width() > 64 || img.height() > 64)
-                                ? img.scaled(64, 64, Qt::KeepAspectRatio)
-                                : img);
-          sicon = icon;
-        } else {
-          sicon = QIcon();
-          DMessageManager::instance()->sendMessage(this, ProgramIcon,
-                                                   tr("InvalidIcon"));
-        }
-      }
-    }
+    sicon = name.isEmpty() ? QIcon() : Utilities::trimIconFromFile(name);
     this->refreshIcon();
   });
   connect(fcicon, &DFileChooserEdit::fileChoosed, this,

@@ -56,7 +56,7 @@ void RunDialog::on_accept() {
     params.append(item);
   }
   auto res = plgsys->pluginCall(plgsys->pluginProvider(plg),
-                                cbService->currentIndex(), params);
+                                cbService->currentIndex() + 1, params);
   done(res);
 }
 

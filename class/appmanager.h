@@ -26,6 +26,8 @@ public:
   void clearHotkey();
 
   Qt::KeyboardModifiers getKeyModifiers() const;
+  Qt::MouseButtons getMouseButtons() const;
+  bool isRegistered(QKeySequence &seq) const;
 
 signals:
   void buttonPress(Qt::MouseButton btn, int x, int y);

@@ -4,7 +4,15 @@
 TestPlugin::TestPlugin(QObject *parent) {
   Q_UNUSED(parent);
   qRegisterMetaType<TestService>("TestService");
+}
 
+int TestPlugin::sdkVersion() { return SDKVERSION; }
+
+QString TestPlugin::signature() { return WINGSUMMER; }
+
+TestPlugin::~TestPlugin() { testmenu->deleteLater(); }
+
+bool TestPlugin::preInit() {
   dialog = new QDialog;
   dialog->setFixedSize(400, 400);
   dialog->setWindowTitle("TestPluginConsole");
@@ -20,29 +28,19 @@ TestPlugin::TestPlugin(QObject *parent) {
   testmenu = new QAction;
   testmenu->setIcon(QIcon(":/TestPlugin/logo.svg"));
   testmenu->setText("TestMenu");
+  return true;
 }
-
-int TestPlugin::sdkVersion() { return SDKVERSION; }
-
-QString TestPlugin::signature() { return WINGSUMMER; }
-
-TestPlugin::~TestPlugin() { testmenu->deleteLater(); }
 
 bool TestPlugin::init(QList<WingPluginInfo> loadedplugin) {
   Q_UNUSED(loadedplugin);
   dialog->show();
-  auto s = GETPLUGINQM("TestPlugin.qm");
-  if (!translator.load(s) || !QApplication::installTranslator(&translator)) {
-    QMessageBox::critical(nullptr, "Error", "Error Loading File!",
-                          QMessageBox::Ok);
-    return false;
-  }
   return true;
 }
 
 void TestPlugin::unload() {
   dialog->close();
   delete dialog;
+  testmenu->deleteLater();
 }
 
 QString TestPlugin::pluginName() { return "TestPlugin"; }
@@ -73,47 +71,23 @@ HookIndex TestPlugin::getHookSubscribe() { return HookIndex::None; }
 
 QObject *TestPlugin::trayRegisteredMenu() { return testmenu; }
 
+QString TestPlugin::translatorFile() { return "TestPlugin.qm"; }
+
 QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
+  Q_UNUSED(params);
   switch (serviceID) {
-  case HostService:
-    if (params.first() == LoadedPluginMsg) {
-      testhotkey = registerHotkey(
-          QKeySequence(Qt::KeyboardModifier::ControlModifier |
-                       Qt::KeyboardModifier::AltModifier | Qt::Key_Q));
-      if (testhotkey.isNull()) {
-        tbinfo->append(QString("registerHotkey Error!"));
-      }
+  case PLUGINLOADING:
+    break;
+  case PLUGINLOADED: {
+    testhotkey = registerHotkey(
+        QKeySequence(Qt::KeyboardModifier::ControlModifier |
+                     Qt::KeyboardModifier::AltModifier | Qt::Key_Q));
+    if (testhotkey.isNull()) {
+      tbinfo->append(QString("registerHotkey Error!"));
     }
-    break;
-  case RemoteCallRes:
-    break;
-  case HotKeyTriggered:
-    tbinfo->append(QString("HotKeyTriggered : %1")
-                       .arg(params.first().value<QUuid>().toString()));
-    break;
-  case 0:
-    if (params.count()) {
-      auto param = params.first();
-      if (param.canConvert(QMetaType::Int)) {
-        tbinfo->append(QString("[func1 call] : %1").arg(param.value<int>()));
-      }
-    }
-    break;
-  case 1:
-    if (params.count()) {
-      QStringList res;
-      for (auto &item : params) {
-        if (item.canConvert(QMetaType::QString)) {
-          res.append(item.value<QString>());
-        } else if (item.canConvert(QMetaType::QStringList)) {
-          res += item.value<QStringList>();
-        }
-      }
-      tbinfo->append(QString("[func2 call] : ") + res.join(';'));
-    }
-    break;
-  case 2:
-    dialog->setVisible(!dialog->isVisible());
+  } break;
+  default:
+    tbinfo->append(QString("GetMessage : %1").arg(serviceID));
     break;
   }
   return QVariant();
@@ -121,6 +95,10 @@ QVariant TestPlugin::pluginServicePipe(int serviceID, QList<QVariant> params) {
 
 void TestPlugin::onPluginCenter() {
   QMessageBox::information(nullptr, "Settings", "You Clicked Settings!");
+}
+
+void TestPlugin::hotkeyTirggered(QUuid id) {
+  tbinfo->append(QString("HotKeyTriggered : %1").arg(id.toString()));
 }
 
 #if QT_VERSION < 0x050000

@@ -25,6 +25,7 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
   tbplginfo->setUndoRedoEnabled(false);
   tbplginfo->setText(tr("No selected plugin."));
   tbplginfo->setLineWrapMode(DTextBrowser::LineWrapMode::NoWrap);
+  tbplginfo->setOpenExternalLinks(true);
 
   connect(lsplgs, &DListWidget::itemSelectionChanged, this, [=] {
     tbplginfo->clear();
@@ -38,6 +39,12 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
     tbplginfo->append(QObject::tr("Version:") +
                       QString::number(plg->pluginVersion()));
     tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
+    tbplginfo->append("");
+    auto fm = tbplginfo->currentCharFormat();
+    tbplginfo->insertHtml(QString("<p>%1<a href=\"%2\" title=\"%2\">%2</a></p>")
+                              .arg(QObject::tr("Web:"))
+                              .arg(plg->pluginWebsite()));
+    tbplginfo->setCurrentCharFormat(fm);
     tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
     tbplginfo->append(QObject::tr("Provider:") + plgsys->pluginProvider(plg));
     tbplginfo->append(QObject::tr("Services:"));
@@ -47,7 +54,7 @@ PluginSelDialog::PluginSelDialog(DDialog *parent)
     auto len = srvs.count();
     for (auto i = 0; i < len; i++) {
       tbplginfo->append(
-          QString("\t%1 : %2 ( %3 )").arg(i).arg(trsrvs[i]).arg(srvs[i]));
+          QString("\t%1 : %2 ( %3 )").arg(i + 1).arg(trsrvs[i]).arg(srvs[i]));
     }
   });
 

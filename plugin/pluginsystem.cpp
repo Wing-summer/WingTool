@@ -19,6 +19,8 @@ PluginSystem::PluginSystem(QMenu *systray, QObject *parent)
   InitDispathcer(HookIndex::MouseWheel);
   InitDispathcer(HookIndex::DoubleClicked);
   InitDispathcer(HookIndex::MouseDrag);
+  InitDispathcer(HookIndex::ButtonPress);
+  InitDispathcer(HookIndex::ButtonRelease);
 
   // 初始化类别插件容器
 #define InitCatagory(catagory)                                                 \
@@ -74,14 +76,12 @@ PluginSystem::PluginSystem(QMenu *systray, QObject *parent)
           [=](const Hotkey *hotkey) {
             if (hotkey->isHostHotkey())
               return;
-
             auto uuid = uhmap.key(const_cast<Hotkey *>(hotkey), QUuid());
             if (uuid.isNull())
               return;
-            int id;
-            auto plg = this->loopUpHotkey(uuid, id);
+            auto plg = this->loopUpHotkey(uuid);
             if (plg)
-              plg->pluginServicePipe(HotKeyTriggered, {uuid});
+              plg->hotkeyTirggered(uuid);
           });
   connect(manager, &AppManager::hotkeyReleased, this,
           [=](const Hotkey *hotkey) {
@@ -91,23 +91,20 @@ PluginSystem::PluginSystem(QMenu *systray, QObject *parent)
             auto uuid = uhmap.key(const_cast<Hotkey *>(hotkey), QUuid());
             if (uuid.isNull())
               return;
-            int id;
-            auto plg = this->loopUpHotkey(uuid, id);
+            auto plg = this->loopUpHotkey(uuid);
             if (plg)
-              plg->pluginServicePipe(HotKeyReleased, {uuid});
+              plg->hotkeyReleased(uuid);
           });
   connect(manager, &AppManager::hotkeyEnableChanged, this,
           [=](bool value, const Hotkey *hotkey) {
             if (hotkey->isHostHotkey())
               return;
-
             auto uuid = uhmap.key(const_cast<Hotkey *>(hotkey), QUuid());
             if (uuid.isNull())
               return;
-            int id;
-            auto plg = this->loopUpHotkey(uuid, id);
+            auto plg = this->loopUpHotkey(uuid);
             if (plg)
-              plg->pluginServicePipe(HotkeyEnableChanged, {value, uuid});
+              plg->hotkeyEnableChanged(value, uuid);
           });
 
   LoadPlugin();
@@ -144,6 +141,7 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
     QPluginLoader loader(fileinfo.absoluteFilePath());
     QList<WingPluginInfo> loadedplginfos;
     QList<QVariant> emptyparam;
+    QTranslator *translator = nullptr;
 
     try {
       auto p = qobject_cast<IWingToolPlg *>(loader.instance());
@@ -165,10 +163,37 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
           return;
         }
 
+        auto trans = p->translatorFile();
+        if (trans.length()) {
+          translator = new QTranslator(this);
+          auto s = GETPLUGINQM(trans);
+          if (!translator->load(s) ||
+              !QApplication::installTranslator(translator)) {
+            dError(QString("Error Loading translatorFile in %1")
+                       .arg(p->pluginName()));
+            translator->deleteLater();
+            translator = nullptr;
+          }
+        }
+
+        if (!p->preInit()) {
+          dError(tr("ErrLoadPreInitPlugin"));
+          loader.unload();
+          if (translator) {
+            QApplication::removeTranslator(translator);
+            translator->deleteLater();
+          }
+          return;
+        }
+
         auto handler = p->serviceHandler();
         if (handler.isNull()) {
           dError(tr("ErrLoadPluginNoHandler"));
           loader.unload();
+          if (translator) {
+            QApplication::removeTranslator(translator);
+            translator->deleteLater();
+          }
           return;
         }
 
@@ -177,6 +202,10 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         if (clsname == nullptr) {
           dError(tr("ErrLoadPluginProvider"));
           loader.unload();
+          if (translator) {
+            QApplication::removeTranslator(translator);
+            translator->deleteLater();
+          }
           return;
         }
 
@@ -184,6 +213,10 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         if (provider.isEmpty() || loadedProvider.contains(provider)) {
           dError(tr("ErrLoadPluginProvider"));
           loader.unload();
+          if (translator) {
+            QApplication::removeTranslator(translator);
+            translator->deleteLater();
+          }
           return;
         }
 
@@ -195,13 +228,16 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
 
         // 暂时缓存一下原函数名称和参数个数，供之后的函数名本地化之用
         QVector<const char *> tmpfunc;
-        QVector<int> tmpfuncargc;
 
         for (auto i = 0; i < srvc; i++) {
           auto m = meta->method(i);
 
+          bool isinterface = false;
           if (strcmp(PLUGINSRVTAG, m.tag())) {
-            continue;
+            if (strcmp(PLUGININTTAG, m.tag())) {
+              continue;
+            }
+            isinterface = true;
           }
 
           auto argc = m.parameterCount();
@@ -210,34 +246,57 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                    QString("%1/10").arg(m.parameterCount()));
             continue;
           }
-          tmpfuncargc.append(argc);
 
-          record.services.append(m);
-          tmpfunc.append(m.name());
-          auto name = QString::fromUtf8(m.name());
-          record.serviceNames.append(name);
+          if (isinterface) {
+            record.interfaces.append(m);
+            auto name = QString::fromUtf8(m.name());
+            record.interfaceNames.append(name);
+          } else {
+            auto name = QString::fromUtf8(m.name());
+            if (record.serviceNames.contains(name)) {
+              dError(tr("ErLoadPluginService"));
+              loader.unload();
+              if (translator) {
+                QApplication::removeTranslator(translator);
+                translator->deleteLater();
+              }
+              return;
+            }
+            record.services.append(m);
+            tmpfunc.append(m.name());
+
+            record.serviceNames.append(name);
+          }
         }
 
         if (record.services.isEmpty()) {
           dError(tr("ErLoadPluginService"));
+          p->unload();
           loader.unload();
+          if (translator) {
+            QApplication::removeTranslator(translator);
+            translator->deleteLater();
+          }
           return;
         }
 
         // 检查完毕后，就可以进入真正的加载环节
-        emit p->pluginServicePipe(HostService, {LoadingPluginMsg});
+        emit p->pluginServicePipe(PLUGINLOADING, emptyparam);
 
         if (!p->init(loadedplginfos)) {
           dError(tr("ErrLoadInitPlugin"));
+          p->unload();
           loader.unload();
+          if (translator) {
+            QApplication::removeTranslator(translator);
+            translator->deleteLater();
+          }
           return;
         }
 
-        auto len = tmpfunc.count();
-        for (auto i = 0; i < len; i++) {
+        for (auto item : tmpfunc) {
           record.servicetrNames.append(
-              QCoreApplication::translate(clsname, tmpfunc[i]) +
-              QString(" [%1]").arg(tmpfuncargc[i]));
+              QCoreApplication::translate(clsname, item));
         }
 
         WingPluginInfo info;
@@ -246,12 +305,16 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         info.pluginAuthor = p->pluginAuthor();
         info.pluginComment = p->pluginComment();
         info.pluginVersion = p->pluginVersion();
+        info.pluginWebsite = p->pluginWebsite();
+        info.HookSubscribe = p->getHookSubscribe();
+        info.pluginCatagory = p->pluginCatagory();
+        info.translatorFile = p->translatorFile();
 
         loadedplginfos << info;
         m_plgs << p;
         loadedProvider << provider;
 
-        dWarning(tr("PluginInitRegister"));
+        dInfo(tr("PluginInitRegister"));
 
         // 看看有没有要注册的托盘
 
@@ -288,6 +351,8 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         INSERTSUBSCRIBE(HookIndex::MouseWheel);
         INSERTSUBSCRIBE(HookIndex::DoubleClicked);
         INSERTSUBSCRIBE(HookIndex::MouseDrag);
+        INSERTSUBSCRIBE(HookIndex::ButtonPress);
+        INSERTSUBSCRIBE(HookIndex::ButtonRelease);
 
         // 连接信号
         connect(p, &IWingToolPlg::registerHotkey, this,
@@ -375,6 +440,10 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
         connect(p, &IWingToolPlg::sendRemoteMessage, this,
                 [=](const QString provider, int id, QList<QVariant> params,
                     RemoteCallError &err) {
+                  if (id < 0) {
+                    err = RemoteCallError::MessageIDError;
+                    return QVariant();
+                  }
                   auto sender = qobject_cast<IWingToolPlg *>(QObject::sender());
                   if (sender == nullptr) {
                     err = RemoteCallError::Unkown;
@@ -394,8 +463,115 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
                   err = RemoteCallError::Success;
                   return res;
                 });
+        connect(p, &IWingToolPlg::isProviderExists, this,
+                [=](const QString provider) {
+                  return loadedProvider.contains(provider);
+                });
+        connect(p, &IWingToolPlg::isServiceExists, this,
+                [=](const QString provider, const QString callback) {
+                  if (callback.trimmed().isEmpty())
+                    return false;
+                  auto plg = plugin(pluginIndexByProvider(provider));
+                  if (plg == nullptr)
+                    return false;
+                  return m_plgrec[plg].serviceNames.contains(callback);
+                });
+        connect(p, &IWingToolPlg::isInterfaceExists, this,
+                [=](const QString provider, const QString callback) {
+                  if (callback.trimmed().isEmpty())
+                    return false;
+                  auto plg = plugin(pluginIndexByProvider(provider));
+                  if (plg == nullptr)
+                    return false;
+                  return m_plgrec[plg].interfaceNames.contains(callback);
+                });
+        connect(p, &IWingToolPlg::getServiceParamTypes, this,
+                [=](const QString provider, const QString callback) {
+                  auto res = QList<int>();
+                  if (callback.trimmed().isEmpty())
+                    return res;
+                  auto plg = plugin(pluginIndexByProvider(provider));
+                  if (plg == nullptr)
+                    return res;
+                  auto &rec = m_plgrec[plg];
+                  auto &srvs = rec.serviceNames;
+                  int id = srvs.indexOf(callback);
+                  if (id < 0)
+                    return res;
+                  auto m = rec.services[id];
+                  auto len = m.parameterCount();
+                  for (auto i = 0; i < len; i++) {
+                    res.append(m.parameterType(i));
+                  }
+                  return res;
+                });
+        connect(p, &IWingToolPlg::getInterfaceParamTypes, this,
+                [=](const QString provider, const QString callback) {
+                  auto res = QVector<QList<int>>();
+                  if (callback.trimmed().isEmpty())
+                    return res;
+                  auto index = this->pluginIndexByProvider(provider);
+                  if (index < 0)
+                    return res;
+                  auto &rec = m_plgrec[m_plgs[index]];
+                  auto &srvs = rec.interfaceNames;
+                  int id = 0;
+                  for (;; id++) {
+                    id = srvs.indexOf(callback, id);
+                    if (id < 0)
+                      return res;
 
-        emit p->pluginServicePipe(HostService, {LoadedPluginMsg});
+                    QList<int> infos;
+                    auto m = rec.interfaces[id];
+                    auto len = m.parameterCount();
+                    for (auto i = 0; i < len; i++) {
+                      infos.append(m.parameterType(i));
+                    }
+                    res.append(infos);
+                  }
+                });
+        connect(p, &IWingToolPlg::getPressedKeyModifiers, this,
+                [=] { return this->manager->getKeyModifiers(); });
+        connect(p, &IWingToolPlg::getPressedMouseButtons, this,
+                [=] { return this->manager->getMouseButtons(); });
+        connect(p, &IWingToolPlg::getPluginProviders, this,
+                [=] { return loadedProvider; });
+        connect(p, &IWingToolPlg::getPluginInfo, this,
+                [=](const QString provider) {
+                  auto plg = plugin(pluginIndexByProvider(provider));
+                  WingPluginInfo info{};
+                  if (plg) {
+                    info.provider = provider;
+                    info.pluginName = plg->pluginName();
+                    info.pluginAuthor = plg->pluginAuthor();
+                    info.pluginComment = plg->pluginComment();
+                    info.pluginVersion = plg->pluginVersion();
+                    info.pluginWebsite = plg->pluginWebsite();
+                    info.HookSubscribe = plg->getHookSubscribe();
+                    info.pluginCatagory = plg->pluginCatagory();
+                    info.translatorFile = plg->translatorFile();
+                  }
+                  return info;
+                });
+        connect(p, &IWingToolPlg::getPluginServices, this,
+                [=](const QString provider, bool isTr) {
+                  auto plg = plugin(pluginIndexByProvider(provider));
+                  if (plg) {
+                    return isTr ? this->pluginServicetrNames(plg)
+                                : this->pluginServiceNames(plg);
+                  }
+                  return QStringList();
+                });
+        connect(p, &IWingToolPlg::getPluginInterfaces, this,
+                [=](const QString provider) {
+                  auto plg = plugin(pluginIndexByProvider(provider));
+                  if (plg) {
+                    return m_plgrec[plg].interfaceNames;
+                  }
+                  return QStringList();
+                });
+
+        emit p->pluginServicePipe(PLUGINLOADED, emptyparam);
         dInfo(tr("PluginLoaded : %1 %2").arg(p->pluginName()).arg(provider));
       } else {
         dError(loader.errorString());
@@ -404,6 +580,10 @@ void PluginSystem::loadPlugin(QFileInfo fileinfo) {
     } catch (...) {
       dError(tr("PluginLoadingEx"));
       loader.unload();
+      if (translator) {
+        QApplication::removeTranslator(translator);
+        translator->deleteLater();
+      }
     }
   }
 }
@@ -469,57 +649,36 @@ QString PluginSystem::pluginProvider(IWingToolPlg *plg) {
 
 bool PluginSystem::hasRegisteredMenu() { return plgmenuCount > 0; }
 
-IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid, int &index) {
+IWingToolPlg *PluginSystem::loopUpHotkey(QUuid uuid) {
   for (auto plg : m_plgs) {
-    auto res = m_plgrec[plg].hotkeyuid.indexOf(uuid);
-    if (res >= 0) {
-      index = res;
+    auto res = m_plgrec[plg].hotkeyuid.contains(uuid);
+    if (res)
       return plg;
-    }
   }
   return nullptr;
 }
 
 int PluginSystem::remoteCall(IWingToolPlg *plg, QString &callback,
                              QVector<QVariant> params, QVariant &ret) {
-  // 开始查询有没有对应的函数
-  auto &srvn = m_plgrec[plg].serviceNames;
-  auto id = 0;
-  auto &srv = m_plgrec[plg].services;
 
-  for (;; id++) {
-    id = srvn.indexOf(callback, id);
-    if (id < 0)
-      break;
-
-    // 先检查一下参数个数
-    auto &m = srv[id];
-    if (params.count() != m.parameterCount()) {
-      continue;
+  auto id = getCallID(plg, callback, params, false); // 先检查服务有没有
+  if (!id) {
+    // 再检查非隐藏服务有没有
+    id = getCallID(plg, callback, params, true);
+    if (!id) {
+      return CALL_INVALID;
     }
-
-    // 检查类型是否合格
-    auto len = params.count();
-    bool invalid = false;
-    for (auto i = 0; i < len; i++) {
-      if (!params[i].canConvert(m.parameterType(i))) {
-        invalid = true;
-        break;
-      }
-    }
-    if (invalid)
-      continue;
-
-    return remoteCall(plg, id, params, ret);
   }
-
-  return CALL_INVALID;
+  return remoteCall(plg, id, params, ret);
 }
 
 int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
                              QVector<QVariant> params, QVariant &ret) {
+  if (!callID)
+    return CALL_INVALID;
 
-  auto caller = m_plgrec[plg].services[callID];
+  auto caller = callID > 0 ? m_plgrec[plg].services[callID - 1]
+                           : m_plgrec[plg].interfaces[-callID - 1];
 
   if (!caller.isValid()) {
     dError(tr("[remoteCallVaildErr]") +
@@ -583,4 +742,41 @@ int PluginSystem::remoteCall(IWingToolPlg *plg, int callID,
                                       .arg(QString::fromUtf8(caller.name())));
     return CALL_EXCEPTION;
   }
+}
+
+int PluginSystem::getCallID(IWingToolPlg *plg, QString &callback,
+                            QVector<QVariant> params, bool isInterface) {
+  auto &srvn =
+      isInterface ? m_plgrec[plg].interfaceNames : m_plgrec[plg].serviceNames;
+  auto id = 0;
+  auto &srv = m_plgrec[plg].services;
+
+  for (;; id++) {
+    id = srvn.indexOf(callback, id);
+    if (id < 0)
+      break;
+
+    // 先检查一下参数个数
+    auto &m = srv[id];
+    if (params.count() != m.parameterCount()) {
+      continue;
+    }
+
+    // 检查类型是否合格
+    auto len = params.count();
+    bool invalid = false;
+    for (auto i = 0; i < len; i++) {
+      if (!params[i].canConvert(m.parameterType(i))) {
+        invalid = true;
+        break;
+      }
+    }
+    if (invalid)
+      continue;
+
+    id++;
+    return isInterface ? -id : id;
+  }
+
+  return 0;
 }

@@ -29,7 +29,7 @@ struct ToolStructInfo {
   QIcon icon = QIcon();         // 缓存
 
   // 以下仅供插件使用
-  int serviceID = -1;
+  int serviceID = -1; // 这个 ID 比服务 CALLID 小 1
   int pluginIndex = -1;
   QString provider = QString();
   QString serviceName = QString(); // 函数服务名缓存

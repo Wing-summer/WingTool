@@ -275,6 +275,13 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
             tbtoolinfo->append(QObject::tr("Version:") +
                                QString::number(plg->pluginVersion()));
             tbtoolinfo->append(QObject::tr("Author:") + plg->pluginAuthor());
+            tbplginfo->append("");
+            auto fm = tbplginfo->currentCharFormat();
+            tbplginfo->insertHtml(
+                QString("<p>%1<a href=\"%2\" title=\"%2\">%2</a></p>")
+                    .arg(QObject::tr("Web:"))
+                    .arg(plg->pluginWebsite()));
+            tbplginfo->setCurrentCharFormat(fm);
             tbtoolinfo->append(QObject::tr("Comment:") + plg->pluginComment());
             tbtoolinfo->append(QObject::tr("Provider:") +
                                plgsys->pluginProvider(plg));
@@ -300,6 +307,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   tvlayout->addWidget(gw, 0, Qt::AlignCenter);
   tbtoolinfo = new DTextBrowser(w);
   tbtoolinfo->setUndoRedoEnabled(false);
+  tbtoolinfo->setOpenExternalLinks(true);
   tvlayout->addWidget(tbtoolinfo);
 
   group = new DButtonBox(this);
@@ -520,8 +528,9 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
   tbplginfo->setUndoRedoEnabled(false);
   tbplginfo->setText(tr("No selected plugin."));
   tbplginfo->setLineWrapMode(DTextBrowser::LineWrapMode::NoWrap);
+  tbplginfo->setOpenExternalLinks(true);
 
-  pvlayout->addWidget(tbplginfo, 1);
+  pvlayout->addWidget(tbplginfo);
   auto btnplgset = new DPushButton(tr("PluginCenter"), w);
   connect(btnplgset, &DPushButton::clicked, this, [=] {
     auto plg = plgsys->plugin(lwplgs->currentRow());
@@ -548,6 +557,12 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     tbplginfo->append(QObject::tr("Version:") +
                       QString::number(plg->pluginVersion()));
     tbplginfo->append(QObject::tr("Author:") + plg->pluginAuthor());
+    tbplginfo->append("");
+    auto fm = tbplginfo->currentCharFormat();
+    tbplginfo->insertHtml(QString("<p>%1<a href=\"%2\" title=\"%2\">%2</a></p>")
+                              .arg(QObject::tr("Web:"))
+                              .arg(plg->pluginWebsite()));
+    tbplginfo->setCurrentCharFormat(fm);
     tbplginfo->append(QObject::tr("Comment:") + plg->pluginComment());
     tbplginfo->append(QObject::tr("Provider:") + plgsys->pluginProvider(plg));
 
@@ -559,7 +574,7 @@ CenterWindow::CenterWindow(DMainWindow *parent) : DMainWindow(parent) {
     auto len = srv.count();
     for (auto i = 0; i < len; i++) {
       tbplginfo->append(
-          QString("\t%1 : %2 ( %3 )").arg(i).arg(srvtr[i]).arg(srv[i]));
+          QString("\t%1 : %2 ( %3 )").arg(i + 1).arg(srvtr[i]).arg(srv[i]));
     }
 
     tbplginfo->append(tr("RegisteredHotkey:"));
@@ -618,7 +633,7 @@ bool CenterWindow::runTask(ToolStructInfo record) {
     for (auto &item : params) {
       ps.append(item);
     }
-    plgsys->pluginCall(record.provider, record.serviceID, ps);
+    plgsys->pluginCall(record.provider, record.serviceID + 1, ps);
     return true;
   }
 

@@ -17,35 +17,23 @@
 
 #define WINGSUMMER "wingsummer"
 
-#define LoadingPluginMsg QVariant::fromValue('l')
-#define LoadedPluginMsg QVariant::fromValue('L')
-
 #ifndef Q_MOC_RUN
 #define PLUGINSRV
+#define PLUGININT
 #endif
 
 #define PLUGINSRVTAG "PLUGINSRV"
+#define PLUGININTTAG "PLUGININT"
 
 /*=================================*/
 
 // 插件系统预定义服务号，全部为负数
 // 如果服务号为非负数，则表示为插件服务
 
-#define HostService -1         // 插件加载消息服务
-#define RemoteCallRes -2       // 远程调用结果服务
-#define HotKeyTriggered -3     // 热键触发服务
-#define HotKeyReleased -4      //热键释放服务
-#define HotkeyEnableChanged -5 // 热键状态更改服务
+#define PLUGINLOADING -1 // 插件加载中消息
+#define PLUGINLOADED -2  // 插件加载完消息
 
 /*=================================*/
-
-struct WingPluginInfo {
-  QString pluginName;
-  QString pluginAuthor;
-  uint pluginVersion;
-  QString provider;
-  QString pluginComment;
-};
 
 enum class MouseWheelEvent { None, Up, Down, Left, Right };
 Q_DECLARE_METATYPE(MouseWheelEvent)
@@ -57,7 +45,8 @@ enum class RemoteCallError {
   Unkown,          // 回调未知错误，通常由于未处理异常导致
   PluginNotFound,  // 找不到的插件
   ServiceNotFound, // 找到插件，但没有找到对应的服务
-  ArgError         // 调用的参数出现问题
+  ArgError,        // 调用的参数出现问题
+  MessageIDError // 发送消息的 ID 错误，基本发送了小于 0 的消息
 };
 Q_DECLARE_METATYPE(RemoteCallError)
 
@@ -74,6 +63,8 @@ enum HookIndex {
   MouseDrag = 64
 };
 Q_DECLARE_METATYPE(HookIndex)
+
+struct WingPluginInfo;
 
 class IWingToolPlg : public QObject {
   Q_OBJECT
@@ -96,8 +87,11 @@ public:
   virtual QString signature() = 0;
   // 析构函数
   virtual ~IWingToolPlg() {}
-
-  // 插件初始化函数
+  // 插件预初始化，主要初始化服务以备正式初始化使用，可选
+  // 如果预初始化失败，则插件会被卸载
+  // 注：如果提供翻译文件名，此时就已经被加载
+  virtual bool preInit() { return true; }
+  // 插件初始化函数，如果初始化失败，则插件会被卸载
   virtual bool init(QList<WingPluginInfo> loadedplugin) = 0;
   // 插件卸载函数
   virtual void unload() = 0;
@@ -125,9 +119,12 @@ public:
   // 但非必要不要弄，因为这样的插件多了，反而麻烦了，一个插件仅有一项
   // 类型仅支持 QMenu* 或者 QAction* 否则不载入
   virtual QObject *trayRegisteredMenu() { return nullptr; }
+  // 插件的语言包文件名，如果空插件系统默认不加载
+  // 如果有需要还请手动加载
+  virtual QString translatorFile() { return QString(); }
 
 signals:
-  // 注册热键，如果被占用则返回 -1 表示失败（通常是重复），
+  // 注册热键，如果被占用则返回空表示失败（通常是重复），
   // 大于等于 0 则表示成功，返回句柄
   QUuid registerHotkey(QKeySequence keyseq);
 
@@ -149,6 +146,41 @@ signals:
   // 注：不要用它发送数值小于 0 的消息，会发送失败滴，别瞎搞
   QVariant sendRemoteMessage(const QString provider, int id,
                              QList<QVariant> params, RemoteCallError &err);
+
+  // 查询某个插件是否存在
+  bool isProviderExists(const QString provider);
+
+  // 查询某个插件服务是否含有所述服务
+  bool isServiceExists(const QString provider, const QString callback);
+
+  // 查询某个插件服务是否接口
+  bool isInterfaceExists(const QString provider, const QString callback);
+
+  // 获取服务的参数类型
+  QList<int> getServiceParamTypes(const QString provider,
+                                  const QString callback);
+
+  // 获取接口的参数类型
+  QVector<QList<int>> getInterfaceParamTypes(const QString provider,
+                                             const QString callback);
+
+  // 获取全局按下的修饰键序列
+  Qt::KeyboardModifiers getPressedKeyModifiers();
+
+  // 获取全局按下的鼠标按键序列
+  Qt::MouseButtons getPressedMouseButtons();
+
+  // 获取所有插件提供者名称
+  QStringList getPluginProviders();
+
+  // 获取插件信息
+  WingPluginInfo getPluginInfo(const QString provider);
+
+  // 获取插件的所有服务名，isTr 指示是否使用本地化的
+  QStringList getPluginServices(const QString provider, bool isTr = false);
+
+  // 获取所有插件的所有接口名（注：无去重，可能有重复项）
+  QStringList getPluginInterfaces(const QString provider);
 
 public slots:
   // 宿主开始回调函数时候使用，第一个参数是函数服务索引，第二个是参数集合
@@ -202,22 +234,29 @@ public slots:
   }
 
   // 当插件注册的热键触发时会触发该函数
-  virtual void hotkeyTirggered(int index) { Q_UNUSED(index); }
+  virtual void hotkeyTirggered(QUuid id) { Q_UNUSED(id); }
   // 如果插件注册的热键被释放时会触发该函数
-  virtual void hotkeyReleased(int index) { Q_UNUSED(index); }
+  virtual void hotkeyReleased(QUuid id) { Q_UNUSED(id); }
   // 如果插件注册的热键启用状态改变时会触发该函数
-  virtual void hotkeyEnableChanged(bool value, int index) {
+  virtual void hotkeyEnableChanged(bool value, QUuid id) {
     Q_UNUSED(value);
-    Q_UNUSED(index);
-  }
-
-  // 当系统选词更改时触发该函数（仅 X11 有效，Deepin 支持）
-  virtual void selectionTextChanged(const QString &selectedText) {
-    Q_UNUSED(selectedText);
+    Q_UNUSED(id);
   }
 };
 
 #define IWINGPLUGIN_INTERFACE_IID "com.wingsummer.iwingtoolplg"
 Q_DECLARE_INTERFACE(IWingToolPlg, IWINGPLUGIN_INTERFACE_IID)
+
+struct WingPluginInfo {
+  QString pluginName;
+  QString pluginAuthor;
+  IWingToolPlg::Catagorys pluginCatagory;
+  uint pluginVersion;
+  QString provider;
+  QString pluginComment;
+  QString pluginWebsite;
+  HookIndex HookSubscribe;
+  QString translatorFile;
+};
 
 #endif // IWINGTOOLPLG_H

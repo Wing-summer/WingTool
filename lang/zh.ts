@@ -127,33 +127,33 @@
     <message>
         <location filename="../dialog/centerwindow.cpp" line="157"/>
         <location filename="../dialog/centerwindow.cpp" line="197"/>
-        <location filename="../dialog/centerwindow.cpp" line="374"/>
-        <location filename="../dialog/centerwindow.cpp" line="412"/>
+        <location filename="../dialog/centerwindow.cpp" line="378"/>
+        <location filename="../dialog/centerwindow.cpp" line="416"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="160"/>
         <location filename="../dialog/centerwindow.cpp" line="200"/>
-        <location filename="../dialog/centerwindow.cpp" line="380"/>
-        <location filename="../dialog/centerwindow.cpp" line="415"/>
+        <location filename="../dialog/centerwindow.cpp" line="384"/>
+        <location filename="../dialog/centerwindow.cpp" line="419"/>
         <source>Remove</source>
         <translation>删除</translation>
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="163"/>
         <location filename="../dialog/centerwindow.cpp" line="198"/>
-        <location filename="../dialog/centerwindow.cpp" line="310"/>
-        <location filename="../dialog/centerwindow.cpp" line="386"/>
-        <location filename="../dialog/centerwindow.cpp" line="413"/>
+        <location filename="../dialog/centerwindow.cpp" line="312"/>
+        <location filename="../dialog/centerwindow.cpp" line="390"/>
+        <location filename="../dialog/centerwindow.cpp" line="417"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="166"/>
         <location filename="../dialog/centerwindow.cpp" line="202"/>
-        <location filename="../dialog/centerwindow.cpp" line="404"/>
-        <location filename="../dialog/centerwindow.cpp" line="417"/>
+        <location filename="../dialog/centerwindow.cpp" line="408"/>
+        <location filename="../dialog/centerwindow.cpp" line="421"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
@@ -195,7 +195,7 @@
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="265"/>
-        <location filename="../dialog/centerwindow.cpp" line="287"/>
+        <location filename="../dialog/centerwindow.cpp" line="288"/>
         <source>FakeName:</source>
         <translation>别名：</translation>
     </message>
@@ -206,164 +206,164 @@
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="268"/>
-        <location filename="../dialog/centerwindow.cpp" line="289"/>
+        <location filename="../dialog/centerwindow.cpp" line="290"/>
         <source>Params:</source>
         <translation>参数：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="282"/>
-        <location filename="../dialog/centerwindow.cpp" line="291"/>
+        <location filename="../dialog/centerwindow.cpp" line="283"/>
+        <location filename="../dialog/centerwindow.cpp" line="292"/>
         <source>NoTool</source>
         <translation>暂无工具相关信息……</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="286"/>
+        <location filename="../dialog/centerwindow.cpp" line="287"/>
         <source>[File]</source>
         <translation>【文件】</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="288"/>
+        <location filename="../dialog/centerwindow.cpp" line="289"/>
         <source>FileName:</source>
         <translation>文件名：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="324"/>
+        <location filename="../dialog/centerwindow.cpp" line="326"/>
         <source>Swap</source>
         <translation>交换</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="352"/>
+        <location filename="../dialog/centerwindow.cpp" line="355"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="392"/>
-        <location filename="../dialog/centerwindow.cpp" line="419"/>
+        <location filename="../dialog/centerwindow.cpp" line="396"/>
+        <location filename="../dialog/centerwindow.cpp" line="423"/>
         <source>Up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="398"/>
-        <location filename="../dialog/centerwindow.cpp" line="421"/>
+        <location filename="../dialog/centerwindow.cpp" line="402"/>
+        <location filename="../dialog/centerwindow.cpp" line="425"/>
         <source>Down</source>
         <translation>下移</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="423"/>
+        <location filename="../dialog/centerwindow.cpp" line="427"/>
         <source>TopMost</source>
         <translation>置顶</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="456"/>
+        <location filename="../dialog/centerwindow.cpp" line="460"/>
         <source>DownMost</source>
         <translation>置底</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="507"/>
+        <location filename="../dialog/centerwindow.cpp" line="511"/>
         <source>ToolBox</source>
         <translation>工具箱</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="519"/>
-        <location filename="../dialog/centerwindow.cpp" line="533"/>
+        <location filename="../dialog/centerwindow.cpp" line="523"/>
+        <location filename="../dialog/centerwindow.cpp" line="538"/>
         <source>No selected plugin.</source>
         <translation>没有选择插件，故无法显示插件信息。</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="523"/>
+        <location filename="../dialog/centerwindow.cpp" line="528"/>
         <source>PluginCenter</source>
         <translation>插件中心</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="540"/>
+        <location filename="../dialog/centerwindow.cpp" line="545"/>
         <source>Name:</source>
         <translation>名称：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="563"/>
+        <location filename="../dialog/centerwindow.cpp" line="569"/>
         <source>RegisteredHotkey:</source>
         <translation>注册的热键：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="569"/>
+        <location filename="../dialog/centerwindow.cpp" line="575"/>
         <source>Plugins</source>
         <translation>插件</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="588"/>
+        <location filename="../dialog/centerwindow.cpp" line="594"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="593"/>
+        <location filename="../dialog/centerwindow.cpp" line="599"/>
         <source>ThanksForSponsor</source>
         <translation>感谢大家的赞助和支持！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="600"/>
+        <location filename="../dialog/centerwindow.cpp" line="606"/>
         <source>Sponsor</source>
         <translation>赞助</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="627"/>
-        <location filename="../dialog/centerwindow.cpp" line="643"/>
+        <location filename="../dialog/centerwindow.cpp" line="633"/>
+        <location filename="../dialog/centerwindow.cpp" line="649"/>
         <source>runErr</source>
         <translation>执行失败</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="648"/>
+        <location filename="../dialog/centerwindow.cpp" line="654"/>
         <source>err</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="648"/>
+        <location filename="../dialog/centerwindow.cpp" line="654"/>
         <source>openErr</source>
         <translation>打开失败！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="717"/>
-        <location filename="../dialog/centerwindow.cpp" line="809"/>
+        <location filename="../dialog/centerwindow.cpp" line="723"/>
+        <location filename="../dialog/centerwindow.cpp" line="815"/>
         <source>ClearSuccess</source>
         <translation>数据清空完毕</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="727"/>
+        <location filename="../dialog/centerwindow.cpp" line="733"/>
         <source>HotkeyRegisterFail</source>
         <translation>注册热键失败！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="763"/>
+        <location filename="../dialog/centerwindow.cpp" line="769"/>
         <source>PleaseSelectOne</source>
         <translation>请选择一个项目</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="915"/>
-        <location filename="../dialog/centerwindow.cpp" line="927"/>
+        <location filename="../dialog/centerwindow.cpp" line="921"/>
+        <location filename="../dialog/centerwindow.cpp" line="933"/>
         <source>Config (*.wtcfg)</source>
         <translation>羽云工具箱配置文件 (*.wtcfg)</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="921"/>
+        <location filename="../dialog/centerwindow.cpp" line="927"/>
         <source>ExportSuccess</source>
         <translation>导出成功！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="933"/>
+        <location filename="../dialog/centerwindow.cpp" line="939"/>
         <source>ImportSuccess</source>
         <translation>倒入成功！</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="938"/>
+        <location filename="../dialog/centerwindow.cpp" line="944"/>
         <source>Warn</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="938"/>
+        <location filename="../dialog/centerwindow.cpp" line="944"/>
         <source>ResetSettings</source>
         <translation>你将要进行重置操作，原有的将不会保留，你确认吗？</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="949"/>
+        <location filename="../dialog/centerwindow.cpp" line="955"/>
         <source>[%1] RunErr</source>
         <translation>【%1】执行失败，具体错误请查看日志</translation>
     </message>
@@ -381,27 +381,27 @@
         <translation>请选择一个插件，以显示该插件的信息。</translation>
     </message>
     <message>
-        <location filename="../dialog/pluginseldialog.cpp" line="32"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="33"/>
         <source>Name:</source>
         <translation>名称：</translation>
     </message>
     <message>
-        <location filename="../dialog/pluginseldialog.cpp" line="61"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="63"/>
         <source>Select</source>
         <translation>选择</translation>
     </message>
     <message>
-        <location filename="../dialog/pluginseldialog.cpp" line="66"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="68"/>
         <source>NoSelection</source>
         <translation>没有选择插件！</translation>
     </message>
     <message>
-        <location filename="../dialog/pluginseldialog.cpp" line="72"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="74"/>
         <source>NoPlugin</source>
         <translation>无插件</translation>
     </message>
     <message>
-        <location filename="../dialog/pluginseldialog.cpp" line="75"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="77"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
@@ -409,84 +409,90 @@
 <context>
     <name>PluginSystem</name>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="150"/>
+        <location filename="../plugin/pluginsystem.cpp" line="148"/>
         <source>PluginLoadingBegin : %1</source>
         <translation>开始加载插件：%1</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="153"/>
+        <location filename="../plugin/pluginsystem.cpp" line="151"/>
         <source>ErrLoadPluginSign</source>
         <translation>由于插件签名不正确，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="158"/>
+        <location filename="../plugin/pluginsystem.cpp" line="156"/>
         <source>ErrLoadPluginSDKVersion</source>
         <translation>由于插件 SDK 版本不匹配，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="163"/>
+        <location filename="../plugin/pluginsystem.cpp" line="161"/>
         <source>ErrLoadPluginNoName</source>
         <translation>由于插件没有名称，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="170"/>
+        <location filename="../plugin/pluginsystem.cpp" line="180"/>
+        <source>ErrLoadPreInitPlugin</source>
+        <translation>由于插件预初始化失败，插件加载失败！</translation>
+    </message>
+    <message>
+        <location filename="../plugin/pluginsystem.cpp" line="191"/>
         <source>ErrLoadPluginNoHandler</source>
         <translation>由于插件没有服务句柄，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="178"/>
-        <location filename="../plugin/pluginsystem.cpp" line="185"/>
+        <location filename="../plugin/pluginsystem.cpp" line="203"/>
+        <location filename="../plugin/pluginsystem.cpp" line="214"/>
         <source>ErrLoadPluginProvider</source>
         <translation>由于插件没有提供者，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="207"/>
+        <location filename="../plugin/pluginsystem.cpp" line="245"/>
         <source>[InvaildPlgSrvArg]</source>
         <translation>【无效的插件服务，参数过多】</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="219"/>
+        <location filename="../plugin/pluginsystem.cpp" line="257"/>
+        <location filename="../plugin/pluginsystem.cpp" line="273"/>
         <source>ErLoadPluginService</source>
         <translation>由于插件没有服务，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="228"/>
+        <location filename="../plugin/pluginsystem.cpp" line="287"/>
         <source>ErrLoadInitPlugin</source>
         <translation>由于插件初始化失败，插件加载失败！</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="250"/>
+        <location filename="../plugin/pluginsystem.cpp" line="317"/>
         <source>PluginInitRegister</source>
         <translation>插件注册开始</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="266"/>
+        <location filename="../plugin/pluginsystem.cpp" line="333"/>
         <source>InvaildPlgMenu in loading %1</source>
         <translation>加载 %1 插件中含有非法注册托盘菜单组件</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="369"/>
+        <location filename="../plugin/pluginsystem.cpp" line="575"/>
         <source>PluginLoaded : %1 %2</source>
         <translation>插件已加载完毕：%1 %2</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="375"/>
+        <location filename="../plugin/pluginsystem.cpp" line="581"/>
         <source>PluginLoadingEx</source>
         <translation>加载插件出现异常</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="497"/>
-        <location filename="../plugin/pluginsystem.cpp" line="505"/>
+        <location filename="../plugin/pluginsystem.cpp" line="684"/>
+        <location filename="../plugin/pluginsystem.cpp" line="692"/>
         <source>[remoteCallVaildErr]</source>
         <translation>【插件远程调用失败】</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="526"/>
+        <location filename="../plugin/pluginsystem.cpp" line="713"/>
         <source>[remoteCallArgErr]</source>
         <translation>【插件远程调用参数错误】</translation>
     </message>
     <message>
-        <location filename="../plugin/pluginsystem.cpp" line="553"/>
+        <location filename="../plugin/pluginsystem.cpp" line="740"/>
         <source>[remoteCallEx]</source>
         <translation>【插件远程调用异常】</translation>
     </message>
@@ -513,95 +519,107 @@
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="273"/>
-        <location filename="../dialog/centerwindow.cpp" line="544"/>
-        <location filename="../dialog/pluginseldialog.cpp" line="36"/>
+        <location filename="../dialog/centerwindow.cpp" line="549"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="37"/>
         <source>Catagory:</source>
         <translation>分类：</translation>
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="275"/>
-        <location filename="../dialog/centerwindow.cpp" line="546"/>
-        <location filename="../dialog/pluginseldialog.cpp" line="38"/>
+        <location filename="../dialog/centerwindow.cpp" line="551"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="39"/>
         <source>Version:</source>
         <translation>版本：</translation>
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="277"/>
-        <location filename="../dialog/centerwindow.cpp" line="548"/>
-        <location filename="../dialog/pluginseldialog.cpp" line="40"/>
+        <location filename="../dialog/centerwindow.cpp" line="553"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="41"/>
         <source>Author:</source>
         <translation>作者：</translation>
     </message>
     <message>
         <location filename="../dialog/centerwindow.cpp" line="278"/>
-        <location filename="../dialog/centerwindow.cpp" line="549"/>
-        <location filename="../dialog/pluginseldialog.cpp" line="41"/>
+        <location filename="../dialog/centerwindow.cpp" line="554"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="42"/>
+        <source>Web:</source>
+        <translation>网站：</translation>
+    </message>
+    <message>
+        <location filename="../dialog/centerwindow.cpp" line="279"/>
+        <location filename="../dialog/centerwindow.cpp" line="555"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="43"/>
         <source>Comment:</source>
         <translation>说明：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="279"/>
-        <location filename="../dialog/centerwindow.cpp" line="550"/>
-        <location filename="../dialog/pluginseldialog.cpp" line="42"/>
+        <location filename="../dialog/centerwindow.cpp" line="280"/>
+        <location filename="../dialog/centerwindow.cpp" line="556"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="44"/>
         <source>Provider:</source>
         <translation>提供者：</translation>
     </message>
     <message>
-        <location filename="../dialog/centerwindow.cpp" line="552"/>
-        <location filename="../dialog/pluginseldialog.cpp" line="43"/>
+        <location filename="../dialog/centerwindow.cpp" line="558"/>
+        <location filename="../dialog/pluginseldialog.cpp" line="45"/>
         <source>Services:</source>
         <translation>服务：</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="53"/>
-        <location filename="../main.cpp" line="59"/>
-        <location filename="../main.cpp" line="169"/>
+        <location filename="../main.cpp" line="54"/>
+        <location filename="../main.cpp" line="60"/>
+        <location filename="../main.cpp" line="176"/>
         <source>WingTool</source>
         <translation>羽云工具箱</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="61"/>
+        <location filename="../main.cpp" line="62"/>
         <source>A powerful plugin toolbox for Deepin.</source>
         <translation>一个用于 Deepin 上强大的插件工具箱</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="131"/>
+        <location filename="../main.cpp" line="132"/>
         <source>ErrorLoadingSettings</source>
         <translation>加载配置失败，将重置配置尝试启动程序！</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="91"/>
+        <location filename="../main.cpp" line="92"/>
         <source>ShowMain</source>
         <translation>显示主窗体</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="135"/>
+        <location filename="../main.cpp" line="136"/>
         <source>Err</source>
         <translation>出错啦</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="136"/>
+        <location filename="../main.cpp" line="137"/>
         <source>ErrResetSettings</source>
         <translation>加载的配置文件错误，可能是配置文件损坏或者老版本不支持，现已经存放到桌面上。</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="151"/>
+        <location filename="../main.cpp" line="152"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="158"/>
+        <location filename="../main.cpp" line="159"/>
+        <source>Wiki</source>
+        <translation>教程</translation>
+    </message>
+    <message>
+        <location filename="../main.cpp" line="165"/>
         <source>Sponsor</source>
         <translation>赞助</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="165"/>
         <location filename="../main.cpp" line="172"/>
+        <location filename="../main.cpp" line="179"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="173"/>
+        <location filename="../main.cpp" line="180"/>
         <source>ConfirmExit</source>
         <translation>你确认继续关闭该程序吗？</translation>
     </message>
@@ -636,7 +654,7 @@
         <translation>创造力</translation>
     </message>
     <message>
-        <location filename="../utilities.h" line="125"/>
+        <location filename="../utilities.h" line="115"/>
         <source>FakeName:%1
 Process:%2
 Service:%3
@@ -647,7 +665,7 @@ Params:%4</source>
 参数：%4</translation>
     </message>
     <message>
-        <location filename="../utilities.h" line="131"/>
+        <location filename="../utilities.h" line="121"/>
         <source>FakeName:%1
 Process:%2
 Params:%3</source>
@@ -666,12 +684,12 @@ Params:%3</source>
     <message>
         <location filename="../dialog/rundialog.cpp" line="9"/>
         <source>Plugin</source>
-        <translation>插件插件</translation>
+        <translation>插件</translation>
     </message>
     <message>
         <location filename="../dialog/rundialog.cpp" line="21"/>
         <source>Service</source>
-        <translation>服务服务</translation>
+        <translation>服务</translation>
     </message>
     <message>
         <location filename="../dialog/rundialog.cpp" line="31"/>
@@ -734,7 +752,12 @@ Params:%3</source>
         <translation>没有设置热键</translation>
     </message>
     <message>
-        <location filename="../dialog/shortcuteditdialog.cpp" line="130"/>
+        <location filename="../dialog/shortcuteditdialog.cpp" line="119"/>
+        <source>HotkeyRegistered</source>
+        <translation>此热键已被注册，请更换！</translation>
+    </message>
+    <message>
+        <location filename="../dialog/shortcuteditdialog.cpp" line="136"/>
         <source>NoProcessSet</source>
         <translation>没有设置进程</translation>
     </message>
@@ -781,13 +804,13 @@ Params:%3</source>
     </message>
     <message>
         <location filename="../dialog/tooleditdialog.cpp" line="26"/>
-        <location filename="../dialog/tooleditdialog.cpp" line="88"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="67"/>
         <source>Service</source>
         <translation>服务</translation>
     </message>
     <message>
         <location filename="../dialog/tooleditdialog.cpp" line="32"/>
-        <location filename="../dialog/tooleditdialog.cpp" line="88"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="67"/>
         <source>FilePath</source>
         <translation>文件路径</translation>
     </message>
@@ -802,32 +825,27 @@ Params:%3</source>
         <translation>图像 (*.png *.svg *.jpg *.jpeg)</translation>
     </message>
     <message>
-        <location filename="../dialog/tooleditdialog.cpp" line="71"/>
-        <source>InvalidIcon</source>
-        <translation>无效图标！</translation>
-    </message>
-    <message>
-        <location filename="../dialog/tooleditdialog.cpp" line="120"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="99"/>
         <source>Param</source>
         <translation>参数</translation>
     </message>
     <message>
-        <location filename="../dialog/tooleditdialog.cpp" line="126"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="105"/>
         <source>FakeName</source>
         <translation>别名</translation>
     </message>
     <message>
-        <location filename="../dialog/tooleditdialog.cpp" line="135"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="114"/>
         <source>IconPreview</source>
         <translation>图标预览</translation>
     </message>
     <message>
-        <location filename="../dialog/tooleditdialog.cpp" line="159"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="140"/>
         <source>NoVaildIconSet</source>
         <translation>没有有效的图标设置！</translation>
     </message>
     <message>
-        <location filename="../dialog/tooleditdialog.cpp" line="177"/>
+        <location filename="../dialog/tooleditdialog.cpp" line="157"/>
         <source>NoVaildProcessSet</source>
         <translation>没有有效的进程设置！</translation>
     </message>

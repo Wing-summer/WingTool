@@ -114,6 +114,12 @@ void ShortCutEditDialog::on_accept() {
     return;
   }
 
+  if (manager->isRegistered(res.seq)) {
+    DMessageManager::instance()->sendMessage(this, ProgramIcon,
+                                             tr("HotkeyRegistered"));
+    return;
+  }
+
   res.isPlugin = ps->getSelectedIndex() >= 0;
 
   if (res.isPlugin) {

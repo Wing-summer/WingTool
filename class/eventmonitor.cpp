@@ -69,6 +69,8 @@ Qt::KeyboardModifiers EventMonitor::getKeyModifiers() const {
   return keyModifiers;
 }
 
+Qt::MouseButtons EventMonitor::getMouseButtons() const { return mouseBtns; }
+
 void EventMonitor::callback(XPointer ptr, XRecordInterceptData *data) {
   (reinterpret_cast<EventMonitor *>(ptr))->handleRecordEvent(data);
 }
@@ -85,6 +87,7 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
         switch (event->u.u.detail) {
         case Button1: {
           btn = Qt::MouseButton::LeftButton;
+          mouseBtns.setFlag(Qt::MouseButton::LeftButton);
 
           auto clicknow = std::chrono::system_clock::now();
           double diff_ms =
@@ -104,15 +107,19 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
         } break;
         case Button2:
           btn = Qt::MouseButton::MiddleButton;
+          mouseBtns.setFlag(Qt::MouseButton::MiddleButton);
           break;
         case Button3:
           btn = Qt::MouseButton::RightButton;
+          mouseBtns.setFlag(Qt::MouseButton::RightButton);
           break;
         case XButton_1:
           btn = Qt::MouseButton::XButton1;
+          mouseBtns.setFlag(Qt::MouseButton::XButton1);
           break;
         case XButton_2:
           btn = Qt::MouseButton::XButton2;
+          mouseBtns.setFlag(Qt::MouseButton::XButton2);
           break;
         }
 
@@ -137,18 +144,23 @@ void EventMonitor::handleRecordEvent(XRecordInterceptData *data) {
         switch (event->u.u.detail) {
         case Button1:
           btn = Qt::MouseButton::LeftButton;
+          mouseBtns.setFlag(Qt::MouseButton::LeftButton, false);
           break;
         case Button2:
           btn = Qt::MouseButton::MiddleButton;
+          mouseBtns.setFlag(Qt::MouseButton::MiddleButton, false);
           break;
         case Button3:
           btn = Qt::MouseButton::RightButton;
+          mouseBtns.setFlag(Qt::MouseButton::RightButton, false);
           break;
         case XButton_1:
           btn = Qt::MouseButton::XButton1;
+          mouseBtns.setFlag(Qt::MouseButton::XButton1, false);
           break;
         case XButton_2:
           btn = Qt::MouseButton::XButton2;
+          mouseBtns.setFlag(Qt::MouseButton::XButton2, false);
           break;
         }
         emit buttonRelease(btn, event->u.keyButtonPointer.rootX,

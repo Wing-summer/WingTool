@@ -50,6 +50,7 @@ public:
   QString signature() override;
   ~TestPlugin() override;
 
+  bool preInit() override;
   bool init(QList<WingPluginInfo> loadedplugin) override;
   void unload() override;
   QString pluginName() override;
@@ -64,10 +65,13 @@ public:
   HookIndex getHookSubscribe() override;
 
   QObject *trayRegisteredMenu() override;
+  QString translatorFile() override;
 
 public slots:
   QVariant pluginServicePipe(int serviceID, QList<QVariant> params) override;
   virtual void onPluginCenter() override;
+
+  void hotkeyTirggered(QUuid id) override;
 
 private:
   QUuid testhotkey;
